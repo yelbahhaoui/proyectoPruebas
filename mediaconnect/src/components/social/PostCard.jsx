@@ -1,17 +1,32 @@
-import React, { useState } from 'react';
-import { Heart, MessageCircle, Repeat, Share2, MoreHorizontal } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Heart, MessageCircle, Repeat, MoreHorizontal, Trash2 } from 'lucide-react';
 
-const PostCard = ({ user, handle, time, content, image, initialLikes, comments, retweets, tag }) => {
+const PostCard = ({ user, handle, time, content, image, initialLikes, comments, retweets, tag, isOwner, onDelete }) => {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(initialLikes || 0);
+  
+  // Estado para el menú de los 3 puntos
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
 
   const handleLike = () => {
     setLikeCount(liked ? likeCount - 1 : likeCount + 1);
     setLiked(!liked);
   };
 
+  // Cerrar menú al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
-    <div className="border-b border-slate-200 dark:border-slate-800 p-4 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors cursor-pointer">
+    <div className="border-b border-slate-200 dark:border-slate-800 p-4 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors cursor-pointer relative">
       <div className="flex gap-4">
         {/* Avatar */}
         <div className="flex-shrink-0">
@@ -24,7 +39,7 @@ const PostCard = ({ user, handle, time, content, image, initialLikes, comments, 
 
         {/* Contenido */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center justify-between mb-1 relative">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-slate-900 dark:text-white hover:underline">{user?.name}</span>
               <span className="text-slate-500 text-sm">@{handle}</span>
@@ -36,9 +51,34 @@ const PostCard = ({ user, handle, time, content, image, initialLikes, comments, 
                 </span>
               )}
             </div>
-            <button className="text-slate-400 hover:text-blue-500">
-              <MoreHorizontal size={18} />
-            </button>
+            
+            {/* BOTÓN 3 PUNTOS Y MENÚ */}
+            <div className="relative" ref={menuRef}>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+                className="text-slate-400 hover:text-blue-500 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <MoreHorizontal size={18} />
+              </button>
+
+              {/* MENÚ DESPLEGABLE */}
+              {showMenu && (
+                <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                  {isOwner ? (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                      className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 font-medium"
+                    >
+                      <Trash2 size={16} /> Eliminar
+                    </button>
+                  ) : (
+                    <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400 cursor-default">
+                      Sin acciones
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <p className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap mb-3 leading-relaxed">
