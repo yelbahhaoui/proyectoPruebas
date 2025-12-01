@@ -1,3 +1,5 @@
+import { db } from './firebase'; // Importa tu db configurada
+import { doc, setDoc, deleteDoc, getDoc, collection, getDocs } from "firebase/firestore";
 const ANILIST_API = 'https://graphql.anilist.co';
 
 // --- CONFIGURACIÓN DE APIS ---
@@ -231,4 +233,36 @@ export const getAnimeDetails = async (id) => {
       status: media.status
     };
   } catch (error) { return null; }
+};
+export const addToFavorites = async (userId, item) => {
+  // Guardamos en: users/{userId}/favorites/{itemId}
+  try {
+    await setDoc(doc(db, "users", userId, "favorites", item.id.toString()), {
+      id: item.id,
+      title: item.title,
+      image: item.image,
+      type: item.type || 'unknown',
+      rating: item.rating,
+      addedAt: new Date()
+    });
+    return true;
+  } catch (e) {
+    console.error("Error adding favorite: ", e);
+    return false;
+  }
+};
+
+// Quitar de favoritos
+export const removeFromFavorites = async (userId, itemId) => {
+  try {
+    await deleteDoc(doc(db, "users", userId, "favorites", itemId.toString()));
+    return true;
+  } catch (e) { return false; }
+};
+
+// Comprobar si ya es favorito
+export const checkIsFavorite = async (userId, itemId) => {
+  const docRef = doc(db, "users", userId, "favorites", itemId.toString());
+  const docSnap = await getDoc(docRef);
+  return docSnap.exists();
 };

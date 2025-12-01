@@ -9,6 +9,10 @@ import Series from './pages/Series';
 import Games from './pages/Games';
 import Forum from './pages/Forum';
 import Details from './pages/Details';
+import Login from './pages/Login';      // <--- IMPORTAR
+import Register from './pages/Register';
+import { ThemeProvider } from './context/ThemeContext'; // <--- IMPORTAR
+import Profile from './pages/Profile';
 
 const Placeholder = ({ title }) => (
   <div className="text-white text-center py-20 text-2xl">
@@ -31,6 +35,8 @@ const App = () => {
           <Route path="/series" element={<Series />} />
           <Route path="/games" element={<Games />} />
           <Route path="/forum" element={<Forum />} />
+          <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
           {/* NUEVAS RUTAS DE DETALLE */}
           <Route path="/movie/:id" element={<Details type="movie" />} />
@@ -44,6 +50,8 @@ const App = () => {
       </div>
     </BrowserRouter>
   );
+
+  
 };
 
 export default App;
