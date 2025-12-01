@@ -121,7 +121,7 @@ const Home = () => {
             {/* Card Series */}
             <Link to="/series" className={cardClass}>
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent z-10"></div>
-              <img src="https://images.unsplash.com/photo-1522869635100-8f47562584a5?auto=format&fit=crop&q=80" alt="Series" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              <img src="https://images.unsplash.com/photo-1576438112307-db9c736ff392?q=80&w=764&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D.com/photo-1522869635100-8f47562584a5?auto=format&fit=crop&q=80" alt="Series" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
               <div className="absolute bottom-4 left-4 z-20">
                 <Tv className="text-purple-500 mb-2" />
                 <span className="text-xl font-bold text-white">Series TV</span>
