@@ -3,12 +3,15 @@ import { Link } from 'react-router-dom';
 import { Film, Gamepad2, Tv, MessageCircle, ArrowRight, Star, Users } from 'lucide-react';
 
 const Home = () => {
+  // Clase común para todas las tarjetas de categoría para asegurar que se vean iguales
+  const cardClass = "group relative aspect-[3/4] overflow-hidden rounded-xl bg-slate-800 block transition-all duration-300 hover:ring-2 hover:ring-blue-500 hover:shadow-lg hover:shadow-blue-500/20 hover:-translate-y-1";
+
   return (
     <div className="flex flex-col min-h-screen">
       
-      {/* 1. HERO SECTION - La entrada principal */}
+      {/* 1. HERO SECTION */}
       <section className="relative py-24 px-4 sm:px-6 lg:px-8 text-center overflow-hidden">
-        {/* Fondo decorativo (gradiente) */}
+        {/* Fondo decorativo */}
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 -z-10"></div>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl opacity-20 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-600 via-transparent to-transparent pointer-events-none"></div>
 
@@ -76,9 +79,10 @@ const Home = () => {
             Todo tu entretenimiento
           </h2>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            
             {/* Card Películas */}
-            <Link to="/movies" className="group relative aspect-[3/4] overflow-hidden rounded-xl bg-slate-800 block">
+            <Link to="/movies" className={cardClass}>
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent z-10"></div>
               <img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80" alt="Cine" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
               <div className="absolute bottom-4 left-4 z-20">
@@ -88,7 +92,7 @@ const Home = () => {
             </Link>
 
             {/* Card Juegos */}
-            <Link to="/games" className="group relative aspect-[3/4] overflow-hidden rounded-xl bg-slate-800 block">
+            <Link to="/games" className={cardClass}>
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent z-10"></div>
               <img src="https://images.unsplash.com/photo-1552820728-8b83bb6b773f?auto=format&fit=crop&q=80" alt="Juegos" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
               <div className="absolute bottom-4 left-4 z-20">
@@ -97,21 +101,20 @@ const Home = () => {
               </div>
             </Link>
 
-            {/* Card Anime (Enlaza a la página que YA FUNCIONA) */}
-            <Link to="/anime" className="group relative aspect-[3/4] overflow-hidden rounded-xl bg-slate-800 block ring-2 ring-blue-500 shadow-lg shadow-blue-500/20">
+            {/* Card Anime (MODIFICADO) */}
+            <Link to="/anime" className={cardClass}>
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent z-10"></div>
               <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&q=80" alt="Anime" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
               <div className="absolute bottom-4 left-4 z-20">
                 <Star className="text-yellow-400 mb-2 fill-yellow-400" />
                 <span className="text-xl font-bold text-white">Anime</span>
-                <span className="ml-2 text-xs bg-blue-600 px-2 py-1 rounded text-white">Live!</span>
               </div>
             </Link>
 
             {/* Card Series */}
-            <Link to="/series" className="group relative aspect-[3/4] overflow-hidden rounded-xl bg-slate-800 block">
+            <Link to="/series" className={cardClass}>
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent z-10"></div>
-              <img src="https://images.unsplash.com/photo-1522869635100-8f47562584a5?auto=format&fit=crop&q=80" alt="Series" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              <img src="https://images.unsplash.com/photo-1576438112307-db9c736ff392?q=80&w=1964&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Series" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
               <div className="absolute bottom-4 left-4 z-20">
                 <Tv className="text-purple-500 mb-2" />
                 <span className="text-xl font-bold text-white">Series TV</span>

@@ -1,9 +1,14 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
-// 1. IMPORTANTE: Importamos la nueva página Home
-import Home from './pages/Home'; 
+import Home from './pages/Home';
 import Anime from './pages/Anime';
+// Importamos las nuevas páginas
+import Movies from './pages/Movies';
+import Series from './pages/Series';
+import Games from './pages/Games';
+import Forum from './pages/Forum';
+import Details from './pages/Details';
 
 const Placeholder = ({ title }) => (
   <div className="text-white text-center py-20 text-2xl">
@@ -18,15 +23,21 @@ const App = () => {
         <Navbar />
         
         <Routes>
-          {/* 2. IMPORTANTE: Cambiamos el element del path "/" para usar <Home /> */}
           <Route path="/" element={<Home />} />
           
+          {/* Rutas Multimedia */}
           <Route path="/anime" element={<Anime />} />
-          
-          <Route path="/movies" element={<Placeholder title="Películas" />} />
-          <Route path="/series" element={<Placeholder title="Series" />} />
-          <Route path="/games" element={<Placeholder title="Videojuegos" />} />
-          {/* Añadimos ruta de registro para que no de error el botón del Home */}
+          <Route path="/movies" element={<Movies />} />
+          <Route path="/series" element={<Series />} />
+          <Route path="/games" element={<Games />} />
+          <Route path="/forum" element={<Forum />} />
+
+          {/* NUEVAS RUTAS DE DETALLE */}
+          <Route path="/movie/:id" element={<Details type="movie" />} />
+          <Route path="/series/:id" element={<Details type="series" />} />
+          <Route path="/game/:id" element={<Details type="game" />} />
+          <Route path="/anime/:id" element={<Details type="anime" />} />
+
           <Route path="/register" element={<Placeholder title="Registro" />} />
         </Routes>
 
