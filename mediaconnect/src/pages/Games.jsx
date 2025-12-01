@@ -9,7 +9,6 @@ const Games = () => {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ genre: '', year: '', minRating: 0 });
 
-  // Lista manual de Slugs de géneros populares en RAWG
   const genres = [
     { id: "action", name: "Acción" }, { id: "adventure", name: "Aventura" },
     { id: "role-playing-games-rpg", name: "RPG" }, { id: "shooter", name: "Shooter" },
@@ -21,15 +20,12 @@ const Games = () => {
 
   useEffect(() => {
     let result = rawData;
-    // 1. Filtro Género (RAWG devuelve array de objetos, buscamos por slug)
     if (filters.genre) {
       result = result.filter(g => g.genres && g.genres.some(gen => gen.slug === filters.genre));
     }
-    // 2. Filtro Año (released: "2023-05-12")
     if (filters.year) {
       result = result.filter(g => g.released && g.released.startsWith(filters.year));
     }
-    // 3. Filtro Rating (Metacritic es 0-100, el slider es 0-10)
     if (filters.minRating > 0) {
       result = result.filter(g => (g.metacritic || 0) >= filters.minRating * 10);
     }
@@ -56,11 +52,12 @@ const Games = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-white mb-6 border-l-4 border-green-500 pl-4">Videojuegos</h1>
+      {/* CAMBIO AQUÍ: text-slate-900 dark:text-white */}
+      <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-6 border-l-4 border-green-500 pl-4">Videojuegos</h1>
       
       <FilterBar onSearch={handleSearch} onFilterChange={handleFilterChange} filters={filters} genresList={genres} />
 
-      {loading ? <div className="text-white text-center py-20 animate-pulse">Cargando juegos...</div> : (
+      {loading ? <div className="text-slate-600 dark:text-white text-center py-20 animate-pulse">Cargando juegos...</div> : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {displayedGames.map((game) => (
             <MediaCard 

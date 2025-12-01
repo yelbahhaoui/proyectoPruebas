@@ -9,25 +9,21 @@ const Anime = () => {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ genre: '', year: '', minRating: 0 });
 
-  // Lista de géneros (Strings directos para AniList)
   const genres = [
     "Action", "Adventure", "Comedy", "Drama", "Fantasy", 
     "Horror", "Mecha", "Mystery", "Romance", "Sci-Fi", "Slice of Life", "Sports"
-  ].map(g => ({ id: g, name: g })); // Adaptamos formato para que FilterBar lo lea
+  ].map(g => ({ id: g, name: g }));
 
   useEffect(() => { loadContent(); }, []);
 
   useEffect(() => {
     let result = rawData;
-    // 1. Filtro Género (Array de Strings)
     if (filters.genre) {
       result = result.filter(a => a.genres && a.genres.includes(filters.genre));
     }
-    // 2. Filtro Año (startDate.year es un entero)
     if (filters.year) {
       result = result.filter(a => a.startDate && a.startDate.year == filters.year);
     }
-    // 3. Filtro Rating (AverageScore es 0-100)
     if (filters.minRating > 0) {
       result = result.filter(a => (a.averageScore || 0) >= filters.minRating * 10);
     }
@@ -54,11 +50,12 @@ const Anime = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-white mb-6 border-l-4 border-blue-500 pl-4">Anime</h1>
+      {/* CAMBIO AQUÍ: text-slate-900 dark:text-white */}
+      <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-6 border-l-4 border-blue-500 pl-4">Anime</h1>
       
       <FilterBar onSearch={handleSearch} onFilterChange={handleFilterChange} filters={filters} genresList={genres} />
 
-      {loading ? <div className="text-white text-center py-20 animate-pulse">Cargando anime...</div> : (
+      {loading ? <div className="text-slate-600 dark:text-white text-center py-20 animate-pulse">Cargando anime...</div> : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {displayedAnime.map((anime) => (
             <MediaCard 

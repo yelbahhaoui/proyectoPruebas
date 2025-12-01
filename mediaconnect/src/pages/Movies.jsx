@@ -48,17 +48,21 @@ const Movies = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-white mb-6 border-l-4 border-red-500 pl-4">Películas</h1>
+      {/* CAMBIO AQUÍ: text-slate-900 dark:text-white */}
+      <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-6 border-l-4 border-red-500 pl-4">
+        Películas
+      </h1>
+      
       <FilterBar onSearch={handleSearch} onFilterChange={handleFilterChange} filters={filters} genresList={genres} />
       
       {loading ? (
-        <div className="text-white text-center py-20 animate-pulse">Cargando cartelera...</div>
+        <div className="text-slate-600 dark:text-white text-center py-20 animate-pulse">Cargando cartelera...</div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {displayedMovies.map((movie) => (
             <MediaCard 
               key={movie.id}
-              id={movie.id}  /* <--- ¡ESTA LÍNEA ES LA IMPORTANTE! */
+              id={movie.id}
               title={movie.title}
               image={movie.poster_path ? `${IMAGE_BASE}${movie.poster_path}` : 'https://via.placeholder.com/300x450'}
               rating={Math.round(movie.vote_average * 10)}
