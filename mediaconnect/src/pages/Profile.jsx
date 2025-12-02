@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { db, storage } from '../services/firebase'; // Importamos storage
+import { db, storage } from '../services/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Funciones de subida
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import MediaCard from '../components/media/MediaCard';
 import { Filter, Settings, User, Camera, Loader } from 'lucide-react';
 
@@ -15,7 +15,10 @@ const Profile = () => {
   
   // Estado para la subida
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null); // Referencia al input oculto
+  // Estado local para forzar que la imagen cambie visualmente al instante
+  const [localPhoto, setLocalPhoto] = useState(null);
+  
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchFavorites = async () => {
@@ -33,42 +36,47 @@ const Profile = () => {
     fetchFavorites();
   }, [user]);
 
-  // Función que se activa al seleccionar un archivo
+  // Sincronizar foto local con la del usuario al cargar
+  useEffect(() => {
+    if (user?.photoURL) {
+      setLocalPhoto(user.photoURL);
+    }
+  }, [user]);
+
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     setUploading(true);
     try {
-      // 1. Crear referencia (ubicación) donde se guardará: avatars/ID_USUARIO
-      const storageRef = ref(storage, `avatars/${user.uid}`);
-
-      // 2. Subir el archivo
+      // 1. Subir el archivo (usamos Date.now() para evitar problemas de caché con el mismo nombre)
+      const storageRef = ref(storage, `avatars/${user.uid}_${Date.now()}`);
       await uploadBytes(storageRef, file);
 
-      // 3. Obtener la URL de descarga (el link de internet de la imagen)
+      // 2. Obtener la URL
       const photoURL = await getDownloadURL(storageRef);
 
-      // 4. Actualizar el perfil del usuario con la nueva URL
+      // 3. Actualizar el perfil en Firebase
       await updateProfile(user, { photoURL });
+      
+      // 4. Recargar los metadatos del usuario internamente (sin recargar la página)
+      await user.reload();
 
-      // 5. Recargar para ver cambios
-      window.location.reload();
-
+      // 5. Actualizar el estado local para ver el cambio INSTANTÁNEAMENTE
+      setLocalPhoto(photoURL);
+      
     } catch (error) {
       console.error("Error al subir imagen:", error);
-      alert("Error al subir la imagen. Inténtalo de nuevo.");
+      alert("Error al subir la imagen.");
     } finally {
       setUploading(false);
     }
   };
 
-  // Función para abrir el selector de archivos
   const triggerFileInput = () => {
     fileInputRef.current.click();
   };
 
-  // Filtrado
   const filteredFavs = filter === 'all' 
     ? favorites 
     : favorites.filter(item => {
@@ -90,24 +98,24 @@ const Profile = () => {
           {/* Avatar con Overlay de Carga */}
           <div className="relative group">
             <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center text-3xl text-white font-bold border-4 border-white dark:border-slate-800 shadow-xl overflow-hidden shrink-0">
-               {user?.photoURL ? (
-                 <img src={user.photoURL} alt="Perfil" className="w-full h-full object-cover" />
+               {/* Usamos localPhoto si existe, si no la del usuario, si no la inicial */}
+               {localPhoto ? (
+                 <img src={localPhoto} alt="Perfil" className="w-full h-full object-cover" />
                ) : (
                  user?.displayName ? user.displayName[0].toUpperCase() : <User />
                )}
             </div>
             
-            {/* Botón flotante de cámara sobre la foto */}
+            {/* Botón flotante de cámara */}
             <button 
               onClick={triggerFileInput}
               disabled={uploading}
-              className="absolute bottom-0 right-0 bg-slate-800 text-white p-2 rounded-full hover:bg-blue-600 transition-colors border-2 border-white dark:border-slate-900 shadow-md"
+              className="absolute bottom-0 right-0 bg-slate-800 text-white p-2 rounded-full hover:bg-blue-600 transition-colors border-2 border-white dark:border-slate-900 shadow-md z-10"
               title="Cambiar foto"
             >
               {uploading ? <Loader size={14} className="animate-spin"/> : <Camera size={14} />}
             </button>
 
-            {/* Input oculto (es el que abre la galería) */}
             <input 
               type="file" 
               ref={fileInputRef} 
@@ -121,14 +129,14 @@ const Profile = () => {
             <h1 className="text-3xl font-bold">{user?.displayName || "Usuario"}</h1>
             <p className="text-slate-500 dark:text-slate-400">{user?.email}</p>
             
-            {/* Botón alternativo de texto */}
+            {/* Texto de ayuda */}
             <button 
               onClick={triggerFileInput}
               disabled={uploading}
               className="mt-4 text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center justify-center md:justify-start gap-2"
             >
               <Settings size={14} /> 
-              {uploading ? "Subiendo foto..." : "Editar foto de perfil"}
+              {uploading ? "Actualizando..." : "Editar foto de perfil"}
             </button>
           </div>
 
