@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 // Componentes de Estructura
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer'; // <--- 1. IMPORTAR FOOTER
+import ScrollToTop from './components/common/ScrollToTop'; // <--- 1. IMPORTAR
 
 // Páginas
 import Home from './pages/Home';
@@ -49,6 +50,7 @@ const App = () => {
           </main>
 
           <Footer /> {/* <--- 2. AÑADIR FOOTER AQUÍ AL FINAL */}
+          <ScrollToTop />
 
         </div>
       </BrowserRouter>
