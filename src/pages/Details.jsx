@@ -1,123 +1,175 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, Star, User, Tag, Heart } from 'lucide-react';
-import { getMovieDetails, getSeriesDetails, getGameDetails, getAnimeDetails, addToFavorites, removeFromFavorites, checkIsFavorite } from '../services/api';
+import { useParams, useLocation } from 'react-router-dom';
+import { getAnimeDetails, getMovieDetails, getSeriesDetails, getGameDetails, checkIsFavorite, addToFavorites, removeFromFavorites } from '../services/api';
+import { Star, Calendar, Clock, PlayCircle, User } from 'lucide-react'; // Importamos User
 import { useAuth } from '../context/AuthContext';
 
-const Details = ({ type }) => {
+const Details = ({ type: propsType }) => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
-  
-  const [item, setItem] = useState(null);
+  const location = useLocation();
+  const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isFav, setIsFav] = useState(false);
-  const [error, setError] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
+
+  const type = propsType || (location.pathname.includes('anime') ? 'anime' : 
+                            location.pathname.includes('movie') ? 'movie' : 
+                            location.pathname.includes('game') ? 'game' : 'series');
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      setError(false);
+      let data = null;
       try {
-        let data = null;
-        if (type === 'movie') data = await getMovieDetails(id);
-        else if (type === 'series') data = await getSeriesDetails(id);
-        else if (type === 'game') data = await getGameDetails(id);
-        else if (type === 'anime') data = await getAnimeDetails(id);
+        switch (type) {
+          case 'anime': data = await getAnimeDetails(id); break;
+          case 'movie': data = await getMovieDetails(id); break;
+          case 'series': data = await getSeriesDetails(id); break;
+          case 'game': data = await getGameDetails(id); break;
+          default: data = null;
+        }
+      } catch (error) { console.error(error); }
 
-        if (data) {
-          setItem(data);
-          if (user) {
-            const exists = await checkIsFavorite(user.uid, id);
-            setIsFav(exists);
-          }
-        } else { setError(true); }
-      } catch (err) { setError(true); } 
-      finally { setLoading(false); }
+      if (user && data) {
+        try {
+          const isFav = await checkIsFavorite(user.uid, id);
+          setIsFavorite(isFav);
+        } catch (error) {}
+      }
+      setContent(data);
+      setLoading(false);
     };
     loadData();
   }, [id, type, user]);
 
-  const handleToggleFavorite = async () => {
-    if (!user) return alert("Inicia sesión para añadir a favoritos");
-    const itemToSave = { ...item, id, type };
-    if (isFav) { await removeFromFavorites(user.uid, id); setIsFav(false); } 
-    else { await addToFavorites(user.uid, itemToSave); setIsFav(true); }
+  const toggleFavorite = async () => {
+    if (!user) return alert("Inicia sesión para guardar favoritos");
+    setFavLoading(true);
+    try {
+      if (isFavorite) {
+        await removeFromFavorites(user.uid, id);
+        setIsFavorite(false);
+      } else {
+        await addToFavorites(user.uid, { id, title: content.title, image: content.image, rating: content.rating, type });
+        setIsFavorite(true);
+      }
+    } catch (error) { alert("Error al actualizar favoritos"); }
+    setFavLoading(false);
   };
 
-  if (loading) return <div className="text-center py-20 text-xl dark:text-white">Cargando información...</div>;
-  if (error || !item) return <div className="text-center py-20 dark:text-white">No se encontraron detalles.</div>;
+  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Cargando...</div>;
+  if (!content) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">No encontrado.</div>;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 transition-colors duration-300">
-      
-      {/* HERO BACKDROP (Siempre oscuro por la imagen) */}
-      <div className="relative h-[50vh] w-full overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-slate-950 via-slate-900/60 to-transparent z-10"></div>
-        <img src={item.backdrop || item.image} alt="Fondo" className="w-full h-full object-cover opacity-80" />
-        <button onClick={() => navigate(-1)} className="absolute top-6 left-6 z-20 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full text-white transition-colors">
-          <ArrowLeft size={24} />
-        </button>
+    <div className="min-h-screen bg-slate-950 text-white pb-20">
+      {/* Banner / Backdrop */}
+      <div className="relative h-[50vh] w-full">
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent z-10" />
+        <img src={content.backdrop || content.image} alt="Backdrop" className="w-full h-full object-cover opacity-50" />
+        
+        <div className="absolute bottom-0 left-0 w-full p-6 md:p-12 z-20 max-w-7xl mx-auto flex items-end gap-8">
+           <img src={content.image} alt={content.title} className="w-48 rounded-xl shadow-2xl border-4 border-slate-800 hidden md:block aspect-[2/3] object-cover" />
+           <div className="mb-4">
+             <h1 className="text-4xl md:text-6xl font-bold mb-4 text-shadow-lg">{content.title}</h1>
+             <div className="flex flex-wrap gap-3 text-sm font-bold text-slate-300 mb-6">
+                {content.date && <span className="flex items-center gap-1 bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700"><Calendar size={14}/> {content.date.split('-')[0]}</span>}
+                {content.duration && <span className="flex items-center gap-1 bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700"><Clock size={14}/> {content.duration}</span>}
+                <span className="flex items-center gap-1 bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full border border-yellow-500/30">
+                  <Star size={14} fill="currentColor" /> {content.rating}%
+                </span>
+             </div>
+             <button onClick={toggleFavorite} disabled={favLoading} className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all ${isFavorite ? 'bg-red-600 hover:bg-red-700' : 'bg-white text-slate-900 hover:bg-slate-200'}`}>
+                 <Star size={20} fill={isFavorite ? "currentColor" : "none"} /> {isFavorite ? 'En Favoritos' : 'Añadir a Favoritos'}
+             </button>
+           </div>
+        </div>
       </div>
 
-      {/* CONTENIDO PRINCIPAL */}
-      <div className="max-w-7xl mx-auto px-4 -mt-32 relative z-20 mb-20">
-        <div className="flex flex-col md:flex-row gap-8">
+      {/* --- NUEVO LAYOUT GRID --- */}
+      <div className="max-w-7xl mx-auto px-6 md:px-12 py-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
+        
+        {/* COLUMNA IZQUIERDA (Principal) */}
+        <div className="lg:col-span-2 space-y-10">
           
-          {/* POSTER */}
-          <div className="flex-shrink-0 mx-auto md:mx-0">
-            <img src={item.image} alt={item.title} className="w-64 h-96 object-cover rounded-xl shadow-2xl border-4 border-white dark:border-slate-800 bg-white dark:bg-slate-800" />
-          </div>
+          {/* Sinopsis */}
+          <section>
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-blue-400">Sinopsis</h3>
+            <p className="text-slate-300 leading-relaxed text-lg">{content.overview || "No hay descripción disponible."}</p>
+          </section>
 
-          {/* INFORMACIÓN */}
-          <div className="flex-1 pt-4 md:pt-10">
-            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4 drop-shadow-md md:drop-shadow-none">{item.title}</h1>
-            
-            <div className="flex flex-wrap gap-4 mb-6">
-              <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md">{type.toUpperCase()}</span>
-              <span className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-300 px-3 py-1 rounded-full text-sm flex items-center gap-1 shadow-sm border border-slate-200 dark:border-slate-700">
-                <Star size={14} className="text-yellow-500 fill-yellow-500" /> {item.rating || '?'}%
-              </span>
-              <span className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-300 px-3 py-1 rounded-full text-sm shadow-sm border border-slate-200 dark:border-slate-700">{item.status}</span>
-            </div>
+          {/* Trailer (Si existe) */}
+          {content.video && (
+             <section>
+               <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-red-500"><PlayCircle size={20}/> Trailer</h3>
+               <div className="aspect-video w-full rounded-xl overflow-hidden shadow-lg border border-slate-800">
+                 <iframe 
+                   width="100%" height="100%" 
+                   src={`https://www.youtube.com/embed/${content.video}`} 
+                   title="Trailer" frameBorder="0" allowFullScreen
+                 ></iframe>
+               </div>
+             </section>
+          )}
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-              <div>
-                <p className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Calendar size={12}/> ESTRENO</p>
-                <p className="font-medium text-slate-900 dark:text-white">{item.date || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Clock size={12}/> DURACIÓN</p>
-                <p className="font-medium text-slate-900 dark:text-white">{item.duration}</p>
-              </div>
-              <div>
-                <p className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><User size={12}/> CREADOR</p>
-                <p className="font-medium text-slate-900 dark:text-white truncate" title={item.creator}>{item.creator}</p>
-              </div>
-              <div>
-                <p className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Tag size={12}/> GÉNEROS</p>
-                <p className="font-medium text-slate-900 dark:text-white truncate" title={item.genres}>{item.genres}</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white border-l-4 border-blue-500 pl-3">Sinopsis</h3>
-              <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-lg">{item.overview || "No hay descripción disponible."}</p>
-            </div>
-            
-            <div className="mt-8">
-               <button 
-                onClick={handleToggleFavorite}
-                className={`px-6 py-3 rounded-lg font-bold transition-transform hover:scale-105 flex items-center gap-2 shadow-lg ${
-                  isFav ? 'bg-pink-600 text-white shadow-pink-500/30' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/30'
-                }`}
-              >
-                <Heart fill={isFav ? "currentColor" : "none"} />
-                {isFav ? "En Favoritos" : "Añadir a Favoritos"}
-              </button>
-            </div>
-          </div>
+           {/* Géneros (Badges) */}
+           {content.genres && (
+             <section>
+                <h3 className="text-sm font-bold mb-3 text-slate-500 uppercase tracking-wider">Géneros</h3>
+                <div className="flex flex-wrap gap-2">
+                  {content.genres.split(', ').map(g => (
+                    <span key={g} className="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors cursor-default">
+                      {g}
+                    </span>
+                  ))}
+                </div>
+             </section>
+           )}
         </div>
+
+        {/* COLUMNA DERECHA (Sidebar) */}
+        <div className="space-y-8">
+          
+          {/* Info Técnica */}
+          <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800">
+             <h3 className="text-lg font-bold mb-4 text-white">Detalles</h3>
+             <div className="space-y-4">
+                <div>
+                  <p className="text-slate-500 text-xs uppercase font-bold">Creador / Estudio</p>
+                  <p className="font-medium text-slate-200">{content.creator}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500 text-xs uppercase font-bold">Estado</p>
+                  <p className="font-medium text-slate-200">{content.status}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500 text-xs uppercase font-bold">Fecha Estreno</p>
+                  <p className="font-medium text-slate-200">{content.date || "Desconocida"}</p>
+                </div>
+             </div>
+          </div>
+
+          {/* Reparto / Personajes */}
+          {content.cast && content.cast.length > 0 && (
+            <div>
+              <h3 className="text-lg font-bold mb-4 text-white">Reparto Principal</h3>
+              <div className="grid grid-cols-1 gap-3">
+                {content.cast.map(actor => (
+                  <div key={actor.id} className="flex items-center gap-3 bg-slate-900/30 p-2 rounded-lg hover:bg-slate-800 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
+                      {actor.image ? <img src={actor.image} alt={actor.name} className="w-full h-full object-cover"/> : <User className="p-2 text-slate-500"/>}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-slate-200 truncate">{actor.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{actor.character}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );

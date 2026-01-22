@@ -147,10 +147,19 @@ export const searchUsers = async (searchTerm) => {
 
 // --- DETALLES INDIVIDUALES ---
 
+// ... (resto de imports y constantes arriba igual)
+
+// --- DETALLES INDIVIDUALES MEJORADOS ---
+
+// 1. Detalles Película (Con Cast y Trailer)
 export const getMovieDetails = async (id) => {
   try {
     const response = await fetch(`${TMDB_BASE_URL}/movie/${id}?api_key=${TMDB_API_KEY}&language=es-ES&append_to_response=credits,videos`);
     const data = await response.json();
+    
+    // Buscar trailer de YouTube
+    const trailer = data.videos?.results?.find(vid => vid.site === "YouTube" && (vid.type === "Trailer" || vid.type === "Teaser"));
+
     return {
       title: data.title,
       overview: data.overview,
@@ -161,15 +170,28 @@ export const getMovieDetails = async (id) => {
       duration: `${data.runtime} min`,
       creator: data.credits?.crew?.find(p => p.job === "Director")?.name || "Desconocido",
       genres: data.genres?.map(g => g.name).join(", "),
-      status: data.status
+      status: data.status,
+      // NUEVO: Reparto (Top 6)
+      cast: data.credits?.cast?.slice(0, 6).map(actor => ({
+        id: actor.id,
+        name: actor.name,
+        image: actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : null,
+        character: actor.character
+      })),
+      // NUEVO: Video Key
+      video: trailer ? trailer.key : null
     };
   } catch (error) { return null; }
 };
 
+// 2. Detalles Serie (Con Cast y Trailer)
 export const getSeriesDetails = async (id) => {
   try {
-    const response = await fetch(`${TMDB_BASE_URL}/tv/${id}?api_key=${TMDB_API_KEY}&language=es-ES&append_to_response=credits`);
+    const response = await fetch(`${TMDB_BASE_URL}/tv/${id}?api_key=${TMDB_API_KEY}&language=es-ES&append_to_response=credits,videos`);
     const data = await response.json();
+    
+    const trailer = data.videos?.results?.find(vid => vid.site === "YouTube" && vid.type === "Trailer");
+
     return {
       title: data.name,
       overview: data.overview,
@@ -180,11 +202,19 @@ export const getSeriesDetails = async (id) => {
       duration: `${data.number_of_seasons} Temporadas`,
       creator: data.created_by?.[0]?.name || "Desconocido",
       genres: data.genres?.map(g => g.name).join(", "),
-      status: data.status
+      status: data.status,
+      cast: data.credits?.cast?.slice(0, 6).map(actor => ({
+        id: actor.id,
+        name: actor.name,
+        image: actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : null,
+        character: actor.character
+      })),
+      video: trailer ? trailer.key : null
     };
   } catch (error) { return null; }
 };
 
+// 3. Detalles Juego (Sin cambios grandes, RAWG es más complejo para videos)
 export const getGameDetails = async (id) => {
   try {
     const response = await fetch(`${RAWG_BASE_URL}/games/${id}?key=${RAWG_API_KEY}`);
@@ -199,11 +229,14 @@ export const getGameDetails = async (id) => {
       duration: `${data.playtime} horas`,
       creator: data.developers?.[0]?.name || "Desconocido",
       genres: data.genres?.map(g => g.name).join(", "),
-      status: "Lanzado"
+      status: "Lanzado",
+      cast: [], // Juegos no suelen tener "cast" fácil en esta API free
+      video: null
     };
   } catch (error) { return null; }
 };
 
+// 4. Detalles Anime (Con Characters como Cast)
 export const getAnimeDetails = async (id) => {
   const query = `
   query ($id: Int) {
@@ -218,6 +251,13 @@ export const getAnimeDetails = async (id) => {
       startDate { year month day }
       genres
       studios(isMain: true) { nodes { name } }
+      trailer { id site }
+      characters(sort: ROLE, perPage: 6) {
+        nodes {
+          name { full }
+          image { medium }
+        }
+      }
     }
   }
   `;
@@ -239,10 +279,20 @@ export const getAnimeDetails = async (id) => {
       duration: `${media.episodes || '?'} Episodios`,
       creator: media.studios?.nodes?.[0]?.name || "Studio",
       genres: media.genres?.join(", "),
-      status: media.status
+      status: media.status,
+      // Usamos personajes como cast
+      cast: media.characters?.nodes?.map(char => ({
+        id: char.name.full, 
+        name: char.name.full,
+        image: char.image.medium,
+        character: "Personaje"
+      })),
+      video: (media.trailer && media.trailer.site === "youtube") ? media.trailer.id : null
     };
   } catch (error) { return null; }
 };
+
+// ... (El resto de funciones de Favoritos déjalas igual)
 
 // --- FAVORITOS (FIRESTORE) ---
 
