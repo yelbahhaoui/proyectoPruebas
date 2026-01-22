@@ -3,8 +3,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 // Componentes de Estructura
 import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer'; // <--- 1. IMPORTAR FOOTER
-import ScrollToTop from './components/common/ScrollToTop'; // <--- 1. IMPORTAR
+import Footer from './components/layout/Footer'; 
+import ScrollToTop from './components/common/ScrollToTop'; 
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Páginas
@@ -36,6 +36,7 @@ const App = () => {
           {/* Flex-1 hace que el contenido ocupe todo el espacio disponible empujando el footer */}
           <main className="flex-1">
             <Routes>
+              {/* Rutas Públicas */}
               <Route path="/" element={<Home />} />
               <Route path="/anime" element={<Anime />} />
               <Route path="/movies" element={<Movies />} />
@@ -44,36 +45,47 @@ const App = () => {
 
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              
+              {/* Rutas de Detalles */}
+              <Route path="/movie/:id" element={<Details type="movie" />} />
+              <Route path="/series/:id" element={<Details type="series" />} />
+              <Route path="/game/:id" element={<Details type="game" />} />
+              <Route path="/anime/:id" element={<Details type="anime" />} />
+
+              {/* --- RUTAS PROTEGIDAS --- */}
+              
+              {/* CHAT: Protegido */}
               <Route path="/chat" element={
                 <ProtectedRoute>
                   <Chat />
                 </ProtectedRoute>
               } />
 
-              {/* FORO: Si entran sin sesión, sale el mensaje */}
+              {/* FORO: Protegido */}
               <Route path="/forum" element={
                 <ProtectedRoute>
                   <Forum />
                 </ProtectedRoute>
               } />
+              
+              {/* DETALLE POST FORO: Protegido */}
+              <Route path="/forum/post/:postId" element={
+                <ProtectedRoute>
+                  <PostDetail />
+                </ProtectedRoute>
+              } />
 
-              {/* PERFIL: También debería ser protegido */}
+              {/* PERFIL: Protegido */}
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <Profile />
                 </ProtectedRoute>
               } />
-              <Route path="/movie/:id" element={<Details type="movie" />} />
-              <Route path="/series/:id" element={<Details type="series" />} />
-              <Route path="/game/:id" element={<Details type="game" />} />
-              <Route path="/anime/:id" element={<Details type="anime" />} />
 
-              <Route path="/forum/post/:postId" element={<PostDetail />} />
-              <Route path="/chat" element={<Chat />} />
             </Routes>
           </main>
 
-          <Footer /> {/* <--- 2. AÑADIR FOOTER AQUÍ AL FINAL */}
+          <Footer />
           <ScrollToTop />
 
         </div>
