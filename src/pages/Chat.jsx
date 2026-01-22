@@ -21,13 +21,13 @@ const Chat = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [loadingChats, setLoadingChats] = useState(true);
   
-  const scrollRef = useRef();
+  // CAMBIO 1: Referencia al CONTENEDOR, no a un div invisible
+  const messagesContainerRef = useRef(null);
 
-  // 1. CARGAR LISTA DE CHATS (FIREBASE)
+  // 1. CARGAR LISTA DE CHATS
   useEffect(() => {
     if (!user) return;
     
-    // Consulta: Chats donde SOY participante
     const q = query(
       collection(db, "chats"), 
       where("participants", "array-contains", user.uid),
@@ -37,40 +37,28 @@ const Chat = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const chatData = snapshot.docs.map(doc => {
         const data = doc.data();
-        // Calculamos el "otro" usuario de forma segura
         const otherUser = data.users?.find(u => u.uid !== user.uid) || { name: "Usuario", avatar: null };
         return { id: doc.id, ...data, otherUser };
       });
       
       setChats(chatData);
       setLoadingChats(false);
-      console.log("Chats cargados:", chatData.length);
     });
 
     return () => unsubscribe();
   }, [user]);
 
-  // 2. EFECTO PARA RESTAURAR CHAT DESDE URL (F5)
-  // Se ejecuta cada vez que 'chats' cambia o la URL cambia
+  // 2. RESTAURAR CHAT DESDE URL
   useEffect(() => {
     const urlChatId = searchParams.get('chatId');
-    
-    // Solo intentamos restaurar si hay un ID en la URL y los chats ya cargaron
     if (urlChatId && !loadingChats && chats.length > 0) {
-      // Evitamos re-seleccionar si ya es el mismo (para no parpadear)
       if (selectedChat?.id === urlChatId) return;
-
       const foundChat = chats.find(c => c.id === urlChatId);
-      if (foundChat) {
-        console.log("Restaurando chat desde URL:", foundChat.id);
-        setSelectedChat(foundChat);
-      } else {
-        console.warn("El chat de la URL no se encuentra en tus chats (quizás fue borrado o no eres participante).");
-      }
+      if (foundChat) setSelectedChat(foundChat);
     }
-  }, [searchParams, chats, loadingChats]); // Dependencias clave
+  }, [searchParams, chats, loadingChats]);
 
-  // 3. CARGAR MENSAJES DEL CHAT ACTIVO
+  // 3. CARGAR MENSAJES Y SCROLL SUAVE (SIN SALTOS DE PÁGINA)
   useEffect(() => {
     if (!selectedChat?.id) return;
 
@@ -82,7 +70,14 @@ const Chat = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs.map(doc => doc.data());
       setMessages(msgs);
-      setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      
+      // CAMBIO 2: Usamos scrollTop en lugar de scrollIntoView
+      // Esto fuerza el scroll SOLO dentro del contenedor gris, sin mover la página entera.
+      setTimeout(() => {
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      }, 100);
     });
 
     return () => unsubscribe();
@@ -105,7 +100,6 @@ const Chat = () => {
           where("displayName", "<=", searchQuery + '\uf8ff')
         );
         const snapshot = await getDocs(q);
-        // IMPORTANTE: Aseguramos el UID
         const results = snapshot.docs
           .map(doc => ({ uid: doc.id, ...doc.data() }))
           .filter(u => u.uid !== user.uid); 
@@ -117,27 +111,23 @@ const Chat = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, user]);
 
-  // FUNCIÓN AUXILIAR PARA ACTIVAR UN CHAT
-  const activateChat = (chat) => {
+  const selectChat = (chat) => {
     setSelectedChat(chat);
-    setSearchParams({ chatId: chat.id }); // Esto actualiza la URL
+    setSearchParams({ chatId: chat.id });
     setIsSearching(false);
     setSearchQuery("");
   };
 
-  // 5. CREAR O SELECCIONAR DESDE BÚSQUEDA
   const handleSelectUserFromSearch = async (userResult) => {
     if (!userResult.uid) return console.error("Usuario sin UID");
 
-    // Revisar si ya existe
     const existingChat = chats.find(chat => 
       chat.participants.includes(userResult.uid)
     );
 
     if (existingChat) {
-      activateChat(existingChat);
+      selectChat(existingChat);
     } else {
-      // Crear nuevo
       const newChatData = {
         participants: [user.uid, userResult.uid], 
         users: [ 
@@ -150,24 +140,13 @@ const Chat = () => {
 
       try {
           const docRef = await addDoc(collection(db, "chats"), newChatData);
-          // Construir objeto completo para verlo al instante
-          const newChatObj = { 
-              id: docRef.id, 
-              ...newChatData, 
-              otherUser: { 
-                  name: userResult.displayName, 
-                  avatar: userResult.photoURL,
-                  uid: userResult.uid
-              } 
-          };
-          // Añadirlo manualmente a la lista local para evitar delay visual
+          const newChatObj = { id: docRef.id, ...newChatData, otherUser: newChatData.users[1] };
           setChats(prev => [newChatObj, ...prev]);
-          activateChat(newChatObj);
+          selectChat(newChatObj);
       } catch (error) { console.error("Error creando chat:", error); }
     }
   };
 
-  // 6. ENVIAR MENSAJE
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedChat?.id) return;
@@ -193,7 +172,6 @@ const Chat = () => {
     } catch (error) { console.error("Error envío:", error); }
   };
 
-  // Helper para header
   const getHeaderInfo = () => {
     if (!selectedChat) return { name: "Chat", avatar: null };
     if (selectedChat.otherUser) return selectedChat.otherUser;
@@ -224,14 +202,13 @@ const Chat = () => {
 
           <div className="flex-1 overflow-y-auto">
             {isSearching ? (
-                /* RESULTADOS BÚSQUEDA */
                 <div className="p-2">
                     <p className="text-xs font-bold text-slate-400 px-2 mb-2 uppercase">Resultados</p>
                     {searchResults.length > 0 ? (
                         searchResults.map(u => (
                             <div key={u.uid} onClick={() => handleSelectUserFromSearch(u)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
-                                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
-                                    {u.photoURL ? <img src={u.photoURL} className="w-full h-full object-cover"/> : <User size={20}/>}
+                                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold overflow-hidden">
+                                    {u.photoURL ? <img src={u.photoURL} className="w-full h-full object-cover"/> : u.displayName?.[0]}
                                 </div>
                                 <p className="font-bold text-slate-900 dark:text-white">{u.displayName}</p>
                             </div>
@@ -239,12 +216,11 @@ const Chat = () => {
                     ) : ( <p className="text-sm text-slate-500 p-2 text-center">No encontrado.</p> )}
                 </div>
             ) : (
-                /* LISTA CHATS */
                 <div>
                    {chats.map(chat => (
                     <div 
                       key={chat.id} 
-                      onClick={() => activateChat(chat)} 
+                      onClick={() => selectChat(chat)} 
                       className={`flex items-center gap-3 p-4 border-b border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${selectedChat?.id === chat.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                     >
                       <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0 relative">
@@ -275,10 +251,9 @@ const Chat = () => {
         </div>
 
         {/* CHAT AREA */}
-        <div className={`w-full md:w-2/3 flex flex-col bg-slate-50/50 dark:bg-black/20 ${!selectedChat ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`w-full md:w-2/3 flex flex-col bg-slate-50 dark:bg-black/20 ${!selectedChat ? 'hidden md:flex' : 'flex'}`}>
           {selectedChat ? (
             <>
-              {/* Header */}
               <div className="p-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3 shadow-sm z-10">
                 <button onClick={() => { setSelectedChat(null); setSearchParams({}); }} className="md:hidden p-2 hover:bg-slate-100 rounded-full text-slate-500"><ArrowLeft size={20}/></button>
                 <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden flex items-center justify-center">
@@ -287,17 +262,16 @@ const Chat = () => {
                 <h3 className="font-bold text-lg text-slate-900 dark:text-white">{headerInfo.name}</h3>
               </div>
 
-              {/* Mensajes */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* CAMBIO 3: Asignamos el REF al contenedor de mensajes, no a un div vacío */}
+              <div 
+                ref={messagesContainerRef} 
+                className="flex-1 overflow-y-auto p-4 space-y-4"
+              >
                 {messages.map((msg, index) => {
                   const isMe = msg.senderId === user.uid;
                   return (
                     <div key={index} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[75%] px-4 py-2 rounded-2xl ${
-                        isMe 
-                          ? 'bg-blue-600 text-white rounded-br-none' 
-                          : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-bl-none shadow-sm'
-                      }`}>
+                      <div className={`max-w-[75%] px-4 py-2 rounded-2xl ${msg.senderId === user.uid ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-bl-none shadow-sm'}`}>
                         <p>{msg.text}</p>
                         <p className={`text-[10px] mt-1 text-right ${isMe ? 'text-blue-200' : 'text-slate-400'}`}>
                            {msg.createdAt?.seconds ? new Date(msg.createdAt.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...'}
@@ -306,25 +280,11 @@ const Chat = () => {
                     </div>
                   );
                 })}
-                <div ref={scrollRef} />
               </div>
 
-              {/* Input */}
               <form onSubmit={handleSendMessage} className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2">
-                <input 
-                  type="text" 
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Escribe un mensaje..." 
-                  className="flex-1 bg-slate-100 dark:bg-slate-800 border-none rounded-full px-4 py-3 focus:ring-2 focus:ring-blue-500 dark:text-white outline-none"
-                />
-                <button 
-                  type="submit" 
-                  disabled={!newMessage.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full transition-colors disabled:opacity-50"
-                >
-                  <Send size={20} />
-                </button>
+                <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Escribe un mensaje..." className="flex-1 bg-slate-100 dark:bg-slate-800 border-none rounded-full px-4 py-3 focus:ring-2 focus:ring-blue-500 dark:text-white outline-none" />
+                <button type="submit" disabled={!newMessage.trim()} className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full transition-colors disabled:opacity-50"><Send size={20} /></button>
               </form>
             </>
           ) : (
