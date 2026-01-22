@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useSearchParams } from 'react-router-dom'; // <--- IMPORTANTE: Importamos useSearchParams
+import { useSearchParams } from 'react-router-dom';
 import { db } from '../services/firebase';
 import { 
   collection, query, where, onSnapshot, addDoc, 
@@ -10,8 +10,7 @@ import { Send, Search, User, MessageCircle, ArrowLeft } from 'lucide-react';
 
 const Chat = () => {
   const { user } = useAuth();
-  // Hook para manejar los parámetros de búsqueda en la URL (?chatId=...)
-  const [searchParams, setSearchParams] = useSearchParams(); 
+  const [searchParams, setSearchParams] = useSearchParams();
   
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
@@ -20,13 +19,15 @@ const Chat = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [loadingChats, setLoadingChats] = useState(true);
   
   const scrollRef = useRef();
 
-  // 1. CARGAR CHATS Y RESTAURAR SESIÓN SI HAY URL
+  // 1. CARGAR LISTA DE CHATS (FIREBASE)
   useEffect(() => {
     if (!user) return;
     
+    // Consulta: Chats donde SOY participante
     const q = query(
       collection(db, "chats"), 
       where("participants", "array-contains", user.uid),
@@ -36,30 +37,40 @@ const Chat = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const chatData = snapshot.docs.map(doc => {
         const data = doc.data();
-        const otherUser = data.users.find(u => u.uid !== user.uid) || { name: "Usuario", avatar: null };
+        // Calculamos el "otro" usuario de forma segura
+        const otherUser = data.users?.find(u => u.uid !== user.uid) || { name: "Usuario", avatar: null };
         return { id: doc.id, ...data, otherUser };
       });
       
       setChats(chatData);
-
-      // --- LÓGICA DE PERSISTENCIA (F5) ---
-      // Obtenemos el ID del chat de la URL
-      const urlChatId = searchParams.get('chatId');
-      // Si hay un ID en la URL y tenemos chats cargados...
-      if (urlChatId && chatData.length > 0) {
-        // Buscamos el chat correspondiente en la lista
-        const chatToRestore = chatData.find(c => c.id === urlChatId);
-        // Si lo encontramos, lo establecemos como seleccionado
-        if (chatToRestore) {
-          setSelectedChat(chatToRestore);
-        }
-      }
+      setLoadingChats(false);
+      console.log("Chats cargados:", chatData.length);
     });
 
     return () => unsubscribe();
-  }, [user]); // Quitamos searchParams de dep para evitar bucles, lo leemos dentro
+  }, [user]);
 
-  // 2. CARGAR MENSAJES
+  // 2. EFECTO PARA RESTAURAR CHAT DESDE URL (F5)
+  // Se ejecuta cada vez que 'chats' cambia o la URL cambia
+  useEffect(() => {
+    const urlChatId = searchParams.get('chatId');
+    
+    // Solo intentamos restaurar si hay un ID en la URL y los chats ya cargaron
+    if (urlChatId && !loadingChats && chats.length > 0) {
+      // Evitamos re-seleccionar si ya es el mismo (para no parpadear)
+      if (selectedChat?.id === urlChatId) return;
+
+      const foundChat = chats.find(c => c.id === urlChatId);
+      if (foundChat) {
+        console.log("Restaurando chat desde URL:", foundChat.id);
+        setSelectedChat(foundChat);
+      } else {
+        console.warn("El chat de la URL no se encuentra en tus chats (quizás fue borrado o no eres participante).");
+      }
+    }
+  }, [searchParams, chats, loadingChats]); // Dependencias clave
+
+  // 3. CARGAR MENSAJES DEL CHAT ACTIVO
   useEffect(() => {
     if (!selectedChat?.id) return;
 
@@ -77,7 +88,7 @@ const Chat = () => {
     return () => unsubscribe();
   }, [selectedChat?.id]);
 
-  // 3. BUSCAR USUARIOS
+  // 4. BUSCAR USUARIOS
   useEffect(() => {
     const searchUsers = async () => {
       if (!searchQuery.trim()) {
@@ -94,6 +105,7 @@ const Chat = () => {
           where("displayName", "<=", searchQuery + '\uf8ff')
         );
         const snapshot = await getDocs(q);
+        // IMPORTANTE: Aseguramos el UID
         const results = snapshot.docs
           .map(doc => ({ uid: doc.id, ...doc.data() }))
           .filter(u => u.uid !== user.uid); 
@@ -105,25 +117,27 @@ const Chat = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, user]);
 
-  // FUNCIÓN PARA SELECCIONAR CHAT Y ACTUALIZAR URL
-  const selectChat = (chat) => {
+  // FUNCIÓN AUXILIAR PARA ACTIVAR UN CHAT
+  const activateChat = (chat) => {
     setSelectedChat(chat);
-    setSearchParams({ chatId: chat.id }); // Guardamos ID en URL
-    setIsSearching(false); // Cerramos búsqueda si estaba abierta
+    setSearchParams({ chatId: chat.id }); // Esto actualiza la URL
+    setIsSearching(false);
     setSearchQuery("");
   };
 
-  // 4. CREAR/SELECCIONAR DESDE BÚSQUEDA
+  // 5. CREAR O SELECCIONAR DESDE BÚSQUEDA
   const handleSelectUserFromSearch = async (userResult) => {
-    if (!userResult.uid) return;
+    if (!userResult.uid) return console.error("Usuario sin UID");
 
+    // Revisar si ya existe
     const existingChat = chats.find(chat => 
       chat.participants.includes(userResult.uid)
     );
 
     if (existingChat) {
-      selectChat(existingChat); // Usamos la nueva función
+      activateChat(existingChat);
     } else {
+      // Crear nuevo
       const newChatData = {
         participants: [user.uid, userResult.uid], 
         users: [ 
@@ -136,6 +150,7 @@ const Chat = () => {
 
       try {
           const docRef = await addDoc(collection(db, "chats"), newChatData);
+          // Construir objeto completo para verlo al instante
           const newChatObj = { 
               id: docRef.id, 
               ...newChatData, 
@@ -145,12 +160,14 @@ const Chat = () => {
                   uid: userResult.uid
               } 
           };
-          selectChat(newChatObj); // Usamos la nueva función
+          // Añadirlo manualmente a la lista local para evitar delay visual
+          setChats(prev => [newChatObj, ...prev]);
+          activateChat(newChatObj);
       } catch (error) { console.error("Error creando chat:", error); }
     }
   };
 
-  // 5. ENVIAR MENSAJE
+  // 6. ENVIAR MENSAJE
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedChat?.id) return;
@@ -173,14 +190,14 @@ const Chat = () => {
           },
           updatedAt: serverTimestamp()
         });
-    } catch (error) { console.error("Error:", error); }
+    } catch (error) { console.error("Error envío:", error); }
   };
 
+  // Helper para header
   const getHeaderInfo = () => {
-    if (!selectedChat) return { name: "", avatar: null };
+    if (!selectedChat) return { name: "Chat", avatar: null };
     if (selectedChat.otherUser) return selectedChat.otherUser;
-    const found = selectedChat.users?.find(u => u.uid !== user.uid);
-    return found || { name: "Usuario", avatar: null };
+    return { name: "Usuario", avatar: null };
   };
 
   const headerInfo = getHeaderInfo();
@@ -207,6 +224,7 @@ const Chat = () => {
 
           <div className="flex-1 overflow-y-auto">
             {isSearching ? (
+                /* RESULTADOS BÚSQUEDA */
                 <div className="p-2">
                     <p className="text-xs font-bold text-slate-400 px-2 mb-2 uppercase">Resultados</p>
                     {searchResults.length > 0 ? (
@@ -221,11 +239,12 @@ const Chat = () => {
                     ) : ( <p className="text-sm text-slate-500 p-2 text-center">No encontrado.</p> )}
                 </div>
             ) : (
+                /* LISTA CHATS */
                 <div>
                    {chats.map(chat => (
                     <div 
                       key={chat.id} 
-                      onClick={() => selectChat(chat)} // <--- USAMOS LA FUNCIÓN QUE ACTUALIZA URL
+                      onClick={() => activateChat(chat)} 
                       className={`flex items-center gap-3 p-4 border-b border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${selectedChat?.id === chat.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                     >
                       <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0 relative">
@@ -247,6 +266,9 @@ const Chat = () => {
                       </div>
                     </div>
                   ))}
+                  {chats.length === 0 && !loadingChats && (
+                      <div className="p-8 text-center text-slate-500"><p>No tienes chats.</p></div>
+                  )}
                 </div>
             )}
           </div>
