@@ -1,183 +1,172 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { db, storage } from '../services/firebase';
+import { db, auth } from '../services/firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import { updateProfile } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import MediaCard from '../components/media/MediaCard';
-import { Filter, Settings, User, Camera, Loader } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { LogOut, Heart, Settings, Camera, User } from 'lucide-react';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [favorites, setFavorites] = useState([]);
-  const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
-  
-  // Estado para la subida
-  const [uploading, setUploading] = useState(false);
-  // Estado local para forzar que la imagen cambie visualmente al instante
-  const [localPhoto, setLocalPhoto] = useState(null);
-  
-  const fileInputRef = useRef(null);
+  const [filter, setFilter] = useState('all'); // 'all', 'movie', 'series', 'anime', 'game'
 
   useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
     const fetchFavorites = async () => {
-      if (!user) return;
       try {
         const querySnapshot = await getDocs(collection(db, "users", user.uid, "favorites"));
         const favsData = querySnapshot.docs.map(doc => doc.data());
         setFavorites(favsData);
       } catch (error) {
-        console.error("Error fetching favs:", error);
+        console.error("Error cargando favoritos:", error);
       } finally {
         setLoading(false);
       }
     };
+
     fetchFavorites();
-  }, [user]);
+  }, [user, navigate]);
 
-  // Sincronizar foto local con la del usuario al cargar
-  useEffect(() => {
-    if (user?.photoURL) {
-      setLocalPhoto(user.photoURL);
-    }
-  }, [user]);
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setUploading(true);
+  const handleLogout = async () => {
     try {
-      // 1. Subir el archivo (usamos Date.now() para evitar problemas de caché con el mismo nombre)
-      const storageRef = ref(storage, `avatars/${user.uid}_${Date.now()}`);
-      await uploadBytes(storageRef, file);
-
-      // 2. Obtener la URL
-      const photoURL = await getDownloadURL(storageRef);
-
-      // 3. Actualizar el perfil en Firebase
-      await updateProfile(user, { photoURL });
-      
-      // 4. Recargar los metadatos del usuario internamente (sin recargar la página)
-      await user.reload();
-
-      // 5. Actualizar el estado local para ver el cambio INSTANTÁNEAMENTE
-      setLocalPhoto(photoURL);
-      
+      await logout();
+      navigate('/login');
     } catch (error) {
-      console.error("Error al subir imagen:", error);
-      alert("Error al subir la imagen.");
-    } finally {
-      setUploading(false);
+      console.error("Error al salir:", error);
     }
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current.click();
+  // --- LÓGICA CORREGIDA PARA LAS RUTAS ---
+  const getDetailsLink = (item) => {
+    // Dependiendo del 'type' guardado, devolvemos la ruta correcta
+    switch (item.type) {
+      case 'anime': return `/anime/${item.id}`;
+      case 'movie': return `/movie/${item.id}`;
+      case 'series': return `/series/${item.id}`;
+      case 'tv':     return `/series/${item.id}`; // Por si acaso se guardó como 'tv'
+      case 'game':   return `/game/${item.id}`;
+      default:       return `/`; // Fallback
+    }
   };
 
-  const filteredFavs = filter === 'all' 
+  // Filtrar favoritos según la pestaña
+  const filteredFavorites = filter === 'all' 
     ? favorites 
-    : favorites.filter(item => {
-        const type = item.type?.toLowerCase();
-        if (filter === 'movie') return type?.includes('película') || type === 'movie';
-        if (filter === 'series') return type?.includes('serie') || type === 'tv';
-        if (filter === 'game') return type?.includes('juego') || type === 'game';
-        if (filter === 'anime') return type?.includes('anime');
-        return true;
-    });
+    : favorites.filter(item => item.type === filter);
+
+  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Cargando perfil...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-slate-950 text-slate-900 dark:text-slate-200 p-4 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto py-8">
+    <div className="min-h-screen bg-slate-950 pt-20 pb-10 px-4">
+      <div className="max-w-6xl mx-auto">
         
-        {/* Cabecera del Perfil */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 mb-8 shadow-lg flex flex-col md:flex-row items-center gap-6">
-          
-          {/* Avatar con Overlay de Carga */}
+        {/* HEADER PERFIL */}
+        <div className="bg-slate-900 rounded-2xl p-8 mb-8 flex flex-col md:flex-row items-center md:items-start gap-6 border border-slate-800 shadow-xl">
+          {/* Avatar */}
           <div className="relative group">
-            <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center text-3xl text-white font-bold border-4 border-white dark:border-slate-800 shadow-xl overflow-hidden shrink-0">
-               {/* Usamos localPhoto si existe, si no la del usuario, si no la inicial */}
-               {localPhoto ? (
-                 <img src={localPhoto} alt="Perfil" className="w-full h-full object-cover" />
-               ) : (
-                 user?.displayName ? user.displayName[0].toUpperCase() : <User />
-               )}
+            <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-slate-800 shadow-lg">
+                {user?.photoURL ? (
+                    <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+                        <User size={64} className="text-white/50" />
+                    </div>
+                )}
             </div>
-            
-            {/* Botón flotante de cámara */}
-            <button 
-              onClick={triggerFileInput}
-              disabled={uploading}
-              className="absolute bottom-0 right-0 bg-slate-800 text-white p-2 rounded-full hover:bg-blue-600 transition-colors border-2 border-white dark:border-slate-900 shadow-md z-10"
-              title="Cambiar foto"
-            >
-              {uploading ? <Loader size={14} className="animate-spin"/> : <Camera size={14} />}
-            </button>
-
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              accept="image/*" 
-              className="hidden" 
-            />
-          </div>
-
-          <div className="text-center md:text-left flex-1">
-            <h1 className="text-3xl font-bold">{user?.displayName || "Usuario"}</h1>
-            <p className="text-slate-500 dark:text-slate-400">{user?.email}</p>
-            
-            {/* Texto de ayuda */}
-            <button 
-              onClick={triggerFileInput}
-              disabled={uploading}
-              className="mt-4 text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center justify-center md:justify-start gap-2"
-            >
-              <Settings size={14} /> 
-              {uploading ? "Actualizando..." : "Editar foto de perfil"}
+            <button className="absolute bottom-0 right-0 bg-slate-700 p-2 rounded-full text-white hover:bg-blue-600 transition-colors shadow-md border border-slate-900">
+                <Camera size={18} />
             </button>
           </div>
 
-          <div className="ml-auto text-center md:text-right hidden md:block">
-            <div className="text-4xl font-bold text-blue-600 dark:text-blue-500">{favorites.length}</div>
-            <div className="text-sm text-slate-500 uppercase font-bold tracking-wider">Favoritos</div>
+          {/* Info Usuario */}
+          <div className="flex-1 text-center md:text-left">
+            <h1 className="text-3xl font-bold text-white mb-1">{user?.displayName || "Usuario"}</h1>
+            <p className="text-slate-400 mb-4">{user?.email}</p>
+            
+            <div className="flex flex-wrap justify-center md:justify-start gap-3">
+               <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 text-sm font-bold transition-colors">
+                 <Settings size={16} /> Editar foto de perfil
+               </button>
+               <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-sm font-bold transition-colors border border-red-500/20">
+                 <LogOut size={16} /> Cerrar Sesión
+               </button>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="flex gap-8 text-center bg-slate-950/50 p-6 rounded-xl border border-slate-800">
+             <div>
+                <p className="text-3xl font-bold text-blue-500">{favorites.length}</p>
+                <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Favoritos</p>
+             </div>
           </div>
         </div>
 
-        {/* Filtros */}
+        {/* TABS FILTROS */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {['all', 'movie', 'series', 'anime', 'game'].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-full font-bold capitalize transition-all ${
-                filter === f 
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-              }`}
-            >
-              {f === 'all' ? 'Todos' : f}
-            </button>
-          ))}
+            {['all', 'movie', 'series', 'anime', 'game'].map((tab) => (
+                <button
+                    key={tab}
+                    onClick={() => setFilter(tab)}
+                    className={`px-4 py-2 rounded-full text-sm font-bold capitalize transition-all ${
+                        filter === tab 
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
+                        : 'bg-slate-900 text-slate-400 hover:bg-slate-800'
+                    }`}
+                >
+                    {tab === 'all' ? 'Todos' : tab}
+                </button>
+            ))}
         </div>
 
-        {/* Grid de Favoritos */}
-        {loading ? (
-           <p className="text-center py-10 dark:text-white">Cargando biblioteca...</p>
-        ) : filteredFavs.length === 0 ? (
-           <div className="text-center py-20 text-slate-500 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-             <Filter size={48} className="mx-auto mb-4 opacity-50" />
-             <p>No tienes favoritos en esta categoría.</p>
-           </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {filteredFavs.map((item) => (
-              <MediaCard key={item.id} {...item} />
+        {/* GRID FAVORITOS */}
+        {filteredFavorites.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {filteredFavorites.map((item) => (
+                // AQUÍ USAMOS LA FUNCIÓN getDetailsLink
+                <Link 
+                    to={getDetailsLink(item)} 
+                    key={item.id} 
+                    className="group relative aspect-[2/3] bg-slate-900 rounded-xl overflow-hidden border border-slate-800 hover:border-blue-500/50 transition-all hover:scale-[1.02] shadow-lg"
+                >
+                    <img 
+                        src={item.image} 
+                        alt={item.title} 
+                        className="w-full h-full object-cover group-hover:opacity-40 transition-opacity duration-300" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-90" />
+                    
+                    <div className="absolute bottom-0 left-0 p-4 w-full">
+                        {/* Etiqueta Tipo */}
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-600/20 text-blue-400 px-2 py-1 rounded-md mb-2 inline-block border border-blue-500/20">
+                            {item.type}
+                        </span>
+                        <h3 className="text-white font-bold truncate text-sm md:text-base leading-tight">
+                            {item.title}
+                        </h3>
+                        {item.rating && (
+                            <div className="flex items-center gap-1 text-yellow-500 text-xs mt-1">
+                                <Heart size={12} fill="currentColor" /> {item.rating}%
+                            </div>
+                        )}
+                    </div>
+                </Link>
             ))}
-          </div>
+            </div>
+        ) : (
+            <div className="text-center py-20 bg-slate-900/50 rounded-2xl border border-slate-800 border-dashed">
+                <Heart size={48} className="mx-auto text-slate-700 mb-4" />
+                <p className="text-slate-500 text-lg">No tienes favoritos en esta categoría.</p>
+                <Link to="/" className="text-blue-400 hover:underline mt-2 inline-block">Explorar contenido</Link>
+            </div>
         )}
+
       </div>
     </div>
   );

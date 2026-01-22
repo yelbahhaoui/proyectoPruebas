@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer'; // <--- 1. IMPORTAR FOOTER
 import ScrollToTop from './components/common/ScrollToTop'; // <--- 1. IMPORTAR
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Páginas
 import Home from './pages/Home';
@@ -26,29 +27,47 @@ const App = () => {
   return (
     <ThemeProvider>
       <BrowserRouter>
-        
+
         {/* Usamos flex y flex-col para que el footer se quede abajo siempre */}
         <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-slate-200 font-sans transition-colors duration-300 flex flex-col">
-          
+
           <Navbar />
-          
+
           {/* Flex-1 hace que el contenido ocupe todo el espacio disponible empujando el footer */}
-          <main className="flex-1"> 
+          <main className="flex-1">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/anime" element={<Anime />} />
               <Route path="/movies" element={<Movies />} />
               <Route path="/series" element={<Series />} />
               <Route path="/games" element={<Games />} />
-              <Route path="/forum" element={<Forum />} />
+
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/profile" element={<Profile />} />
+              <Route path="/chat" element={
+                <ProtectedRoute>
+                  <Chat />
+                </ProtectedRoute>
+              } />
+
+              {/* FORO: Si entran sin sesión, sale el mensaje */}
+              <Route path="/forum" element={
+                <ProtectedRoute>
+                  <Forum />
+                </ProtectedRoute>
+              } />
+
+              {/* PERFIL: También debería ser protegido */}
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
               <Route path="/movie/:id" element={<Details type="movie" />} />
               <Route path="/series/:id" element={<Details type="series" />} />
               <Route path="/game/:id" element={<Details type="game" />} />
               <Route path="/anime/:id" element={<Details type="anime" />} />
-              <Route path="/forum" element={<Forum />} />
+
               <Route path="/forum/post/:postId" element={<PostDetail />} />
               <Route path="/chat" element={<Chat />} />
             </Routes>
