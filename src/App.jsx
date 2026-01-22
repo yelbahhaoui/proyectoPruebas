@@ -3,8 +3,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 // Componentes de Estructura
 import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer'; 
-import ScrollToTop from './components/common/ScrollToTop'; 
+import Footer from './components/layout/Footer';
+import ScrollToTop from './components/common/ScrollToTop';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Páginas
@@ -20,6 +20,8 @@ import Register from './pages/Register';
 import Profile from './pages/Profile';
 import PostDetail from './pages/PostDetail';
 import Chat from './pages/Chat';
+import PublicProfile from './pages/PublicProfile';
+import Notifications from './pages/Notifications';
 
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -45,7 +47,7 @@ const App = () => {
 
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              
+
               {/* Rutas de Detalles */}
               <Route path="/movie/:id" element={<Details type="movie" />} />
               <Route path="/series/:id" element={<Details type="series" />} />
@@ -53,7 +55,7 @@ const App = () => {
               <Route path="/anime/:id" element={<Details type="anime" />} />
 
               {/* --- RUTAS PROTEGIDAS --- */}
-              
+
               {/* CHAT: Protegido */}
               <Route path="/chat" element={
                 <ProtectedRoute>
@@ -67,7 +69,7 @@ const App = () => {
                   <Forum />
                 </ProtectedRoute>
               } />
-              
+
               {/* DETALLE POST FORO: Protegido */}
               <Route path="/forum/post/:postId" element={
                 <ProtectedRoute>
@@ -79,6 +81,16 @@ const App = () => {
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              } />
+
+              {/* PERFIL PÚBLICO (Cualquiera puede verlo) */}
+              <Route path="/user/:uid" element={<PublicProfile />} />
+
+              {/* NOTIFICACIONES (Protegido) */}
+              <Route path="/notifications" element={
+                <ProtectedRoute>
+                  <Notifications />
                 </ProtectedRoute>
               } />
 
