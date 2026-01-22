@@ -23,7 +23,6 @@ const Chat = () => {
   useEffect(() => {
     if (!user) return;
     
-    // Escuchar chats donde yo estoy incluido
     const q = query(
       collection(db, "chats"), 
       where("participants", "array-contains", user.uid),
@@ -33,7 +32,7 @@ const Chat = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const chatData = snapshot.docs.map(doc => {
         const data = doc.data();
-        // ARREGLO 1: Calcular siempre quién es el otro usuario al cargar la lista
+        // Calculamos quién es el "otro" participante
         const otherUser = data.users.find(u => u.uid !== user.uid) || { name: "Usuario", avatar: null };
         return { id: doc.id, ...data, otherUser };
       });
@@ -43,7 +42,7 @@ const Chat = () => {
     return () => unsubscribe();
   }, [user]);
 
-  // 2. CARGAR MENSAJES
+  // 2. CARGAR MENSAJES (Solo si hay chat seleccionado con ID válido)
   useEffect(() => {
     if (!selectedChat?.id) return;
 
@@ -55,14 +54,14 @@ const Chat = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs.map(doc => doc.data());
       setMessages(msgs);
-      // Scroll automático al fondo
+      // Scroll al fondo al recibir mensaje
       setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     });
 
     return () => unsubscribe();
-  }, [selectedChat?.id]); // Dependencia clave: ID del chat
+  }, [selectedChat?.id]);
 
-  // 3. BUSCAR USUARIOS
+  // 3. BUSCAR USUARIOS (CORREGIDO EL BUG DEL UID)
   useEffect(() => {
     const searchUsers = async () => {
       if (!searchQuery.trim()) {
@@ -73,16 +72,19 @@ const Chat = () => {
       setIsSearching(true);
       try {
         const usersRef = collection(db, "users");
-        // Buscamos usuarios por nombre
         const q = query(
           usersRef, 
           where("displayName", ">=", searchQuery),
           where("displayName", "<=", searchQuery + '\uf8ff')
         );
         const snapshot = await getDocs(q);
+        
+        // CORRECCIÓN CRÍTICA:
+        // Aseguramos que el UID venga del ID del documento si no está en la data
         const results = snapshot.docs
-          .map(doc => doc.data())
+          .map(doc => ({ uid: doc.id, ...doc.data() })) 
           .filter(u => u.uid !== user.uid); 
+        
         setSearchResults(results);
       } catch (error) { console.error(error); }
     };
@@ -91,9 +93,14 @@ const Chat = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, user]);
 
-  // 4. CREAR O SELECCIONAR CHAT (ARREGLADO)
+  // 4. CREAR O SELECCIONAR CHAT
   const handleSelectUserFromSearch = async (userResult) => {
-    // A. Comprobar si ya existe en la lista cargada
+    if (!userResult.uid) {
+        console.error("Error: El usuario seleccionado no tiene UID");
+        return;
+    }
+
+    // A. Comprobar si ya existe chat con este UID
     const existingChat = chats.find(chat => 
       chat.participants.includes(userResult.uid)
     );
@@ -101,26 +108,26 @@ const Chat = () => {
     if (existingChat) {
       setSelectedChat(existingChat);
     } else {
-      // B. Si no existe, CREARLO EN FIREBASE
+      // B. CREAR CHAT NUEVO EN FIREBASE
       const newChatData = {
-        participants: [user.uid, userResult.uid], // Array simple para búsquedas
-        users: [ // Datos completos para mostrar nombres/fotos
-          { uid: user.uid, name: user.displayName, avatar: user.photoURL },
-          { uid: userResult.uid, name: userResult.displayName, avatar: userResult.photoURL }
+        participants: [user.uid, userResult.uid], 
+        users: [ 
+          { uid: user.uid, name: user.displayName || "Yo", avatar: user.photoURL || null },
+          { uid: userResult.uid, name: userResult.displayName || "Usuario", avatar: userResult.photoURL || null }
         ],
         updatedAt: serverTimestamp(),
-        lastMessage: { text: "", senderId: null } // Vacío al inicio
+        lastMessage: { text: "", senderId: null }
       };
 
       try {
           const docRef = await addDoc(collection(db, "chats"), newChatData);
           
-          // ARREGLO 2: Forzamos el 'otherUser' en el estado local para que el Header no salga vacío
-          // mientras Firebase actualiza la lista.
+          // CORRECCIÓN VISUAL: 
+          // Construimos el objeto 'otherUser' manualmente para que se vea el nombre al instante
           setSelectedChat({ 
               id: docRef.id, 
               ...newChatData, 
-              otherUser: { // IMPORTANTE: Aquí pasamos los datos del usuario buscado
+              otherUser: { 
                   name: userResult.displayName, 
                   avatar: userResult.photoURL,
                   uid: userResult.uid
@@ -151,12 +158,12 @@ const Chat = () => {
           createdAt: serverTimestamp()
         });
 
-        // B. Actualizar Chat Padre (para que suba en la lista y se vea el último mensaje)
+        // B. Actualizar Chat (para que el otro usuario vea la notificación/cambio)
         await updateDoc(doc(db, "chats", selectedChat.id), {
           lastMessage: { 
               text: msgText, 
               senderId: user.uid,
-              timestamp: new Date()
+              timestamp: new Date() // Usamos fecha local para evitar delay visual
           },
           updatedAt: serverTimestamp()
         });
@@ -165,12 +172,12 @@ const Chat = () => {
     }
   };
 
-  // Helper para mostrar datos del otro usuario en el Header de forma segura
+  // Helper seguro para obtener datos del header
   const getHeaderInfo = () => {
     if (!selectedChat) return { name: "", avatar: null };
-    // Si tenemos 'otherUser' calculado, úsalo. Si no, búscalo en el array 'users'
     if (selectedChat.otherUser) return selectedChat.otherUser;
     
+    // Fallback: buscar en el array users si otherUser falla
     const found = selectedChat.users?.find(u => u.uid !== user.uid);
     return found || { name: "Usuario", avatar: null };
   };
@@ -253,7 +260,7 @@ const Chat = () => {
         <div className={`w-full md:w-2/3 flex flex-col bg-slate-50/50 dark:bg-black/20 ${!selectedChat ? 'hidden md:flex' : 'flex'}`}>
           {selectedChat ? (
             <>
-              {/* Header con Info Segura */}
+              {/* Header */}
               <div className="p-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3 shadow-sm z-10">
                 <button onClick={() => setSelectedChat(null)} className="md:hidden p-2 hover:bg-slate-100 rounded-full text-slate-500"><ArrowLeft size={20}/></button>
                 <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden flex items-center justify-center">
@@ -304,7 +311,6 @@ const Chat = () => {
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8">
-               {/* Estado vacío */}
                <MessageCircle size={64} className="mb-4 text-slate-200 dark:text-slate-800"/>
                <p>Selecciona un chat para comenzar</p>
             </div>
