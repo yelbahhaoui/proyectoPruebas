@@ -61,7 +61,7 @@ const Navbar = () => {
             <Link to="/movies" className={getLinkClass('/movies')}>Películas</Link>
             <Link to="/series" className={getLinkClass('/series')}>Series</Link>
             <Link to="/anime" className={getLinkClass('/anime')}>Anime</Link>
-            <Link to="/games" className={getLinkClass('/games')}>Juegos</Link>
+            <Link to="/games" className={getLinkClass('/games')}>Videojuegos</Link>
             <Link to="/forum" className={`flex items-center gap-1 ${getLinkClass('/forum')}`}>
               <MessageSquare size={16} /> Foros
             </Link>
@@ -149,7 +149,7 @@ const Navbar = () => {
              <div className="space-y-1 mb-6">
                <p className="px-3 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Categorías</p>
                <Link to="/movies" className="block px-3 py-3 rounded-md text-base font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Películas</Link>
-               <Link to="/series" className="block px-3 py-3 rounded-md text-base font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Series TV</Link>
+               <Link to="/series" className="block px-3 py-3 rounded-md text-base font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Series</Link>
                <Link to="/anime" className="block px-3 py-3 rounded-md text-base font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Anime</Link>
                <Link to="/games" className="block px-3 py-3 rounded-md text-base font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Videojuegos</Link>
                <Link to="/forum" className="block px-3 py-3 rounded-md text-base font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2">

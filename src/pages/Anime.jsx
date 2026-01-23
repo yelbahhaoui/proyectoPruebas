@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { fetchTrendingAnime, searchAnime } from '../services/api';
 import MediaCard from '../components/media/MediaCard';
 import FilterBar from '../components/common/FilterBar';
-import { ChevronDown } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll'; // <--- IMPORTADO
 
 const Anime = () => {
   const [rawData, setRawData] = useState([]);
@@ -16,7 +17,12 @@ const Anime = () => {
     "Horror", "Mecha", "Mystery", "Romance", "Sci-Fi", "Slice of Life", "Sports"
   ].map(g => ({ id: g, name: g }));
 
-  useEffect(() => { loadContent(1); }, []);
+  // Hook Scroll
+  const lastElementRef = useInfiniteScroll(() => {
+    setPage(prev => prev + 1);
+  }, loading);
+
+  useEffect(() => { loadContent(page); }, [page]);
 
   useEffect(() => {
     let result = rawData;
@@ -32,8 +38,15 @@ const Anime = () => {
     setDisplayedAnime(result);
   }, [rawData, filters]);
 
-  const loadContent = async (pageNum = 1) => {
+  const loadContent = async (pageNum) => {
     setLoading(true);
+    
+    // --- DELAY ARTIFICIAL ---
+    if (pageNum > 1) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    // ------------------------
+
     const data = await fetchTrendingAnime(pageNum);
     
     if (pageNum === 1) {
@@ -42,12 +55,6 @@ const Anime = () => {
       setRawData(prev => [...prev, ...(data || [])]);
     }
     setLoading(false);
-  };
-
-  const handleLoadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    loadContent(nextPage);
   };
 
   const handleSearch = async (query) => {
@@ -68,9 +75,9 @@ const Anime = () => {
       <FilterBar onSearch={handleSearch} onFilterChange={handleFilterChange} filters={filters} genresList={genres} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        {displayedAnime.map((anime) => (
+        {displayedAnime.map((anime, index) => (
           <MediaCard 
-            key={`${anime.id}-${Math.random()}`}
+            key={`${anime.id}-${index}`}
             id={anime.id}
             title={anime.title.english || anime.title.romaji}
             image={anime.coverImage.large}
@@ -80,18 +87,15 @@ const Anime = () => {
         ))}
       </div>
 
-      {loading && <div className="text-slate-600 dark:text-white text-center py-10 animate-pulse">Cargando anime...</div>}
-
-      {!loading && displayedAnime.length > 0 && (
-        <div className="mt-12 flex justify-center">
-          <button 
-            onClick={handleLoadMore}
-            className="bg-slate-200 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-300 font-bold py-3 px-8 rounded-full transition-all hover:scale-105 shadow-lg flex items-center gap-2"
-          >
-            <ChevronDown size={20} /> Cargar más anime
-          </button>
-        </div>
-      )}
+      {/* ELEMENTO CENTINELA */}
+      <div ref={lastElementRef} className="h-24 flex items-center justify-center mt-8">
+          {loading && (
+             <div className="flex flex-col items-center gap-2 text-slate-500 dark:text-slate-400">
+                <Loader2 className="animate-spin" size={32} />
+                <span className="text-sm font-bold">Cargando más anime...</span>
+             </div>
+          )}
+      </div>
     </div>
   );
 };

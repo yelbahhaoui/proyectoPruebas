@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom'; // <--- 1. IMPORTANTE
 import { ArrowUp } from 'lucide-react';
 
 const ScrollToTop = () => {
+  const { pathname } = useLocation(); // <--- 2. DETECTAR RUTA
   const [isVisible, setIsVisible] = useState(false);
 
-  // 1. Detectar el scroll para mostrar u ocultar el botón
+  // --- LÓGICA 1: RESTAURAR SCROLL AL CAMBIAR DE PÁGINA ---
+  useEffect(() => {
+    // Al cambiar la ruta (pathname), subimos arriba del todo instantáneamente
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+
+  // --- LÓGICA 2: BOTÓN FLOTANTE (Mostrar/Ocultar) ---
   useEffect(() => {
     const toggleVisibility = () => {
       if (window.scrollY > 300) {
@@ -15,12 +24,10 @@ const ScrollToTop = () => {
     };
 
     window.addEventListener('scroll', toggleVisibility);
-
-    // Limpiamos el evento cuando se desmonta el componente
     return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
 
-  // 2. Función para subir suavemente
+  // Función para subir suavemente (al hacer clic en el botón)
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
