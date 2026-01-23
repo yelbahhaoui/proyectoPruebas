@@ -17,15 +17,12 @@ const Forum = () => {
   const [newPostContent, setNewPostContent] = useState("");
   const [trends, setTrends] = useState([]);
   
-  // Estados para el Buscador de Usuarios
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [userSearchResults, setUserSearchResults] = useState([]);
   const [isUserSearching, setIsUserSearching] = useState(false);
   
-  // Estado para controlar la vista de Tendencias en Móvil
   const [showMobileTrends, setShowMobileTrends] = useState(false);
 
-  // 1. LÓGICA DE BUSCADOR DE USUARIOS
   useEffect(() => {
     const searchUsers = async () => {
       if (!userSearchQuery.trim()) {
@@ -36,7 +33,6 @@ const Forum = () => {
       setIsUserSearching(true);
       try {
         const usersRef = collection(db, "users");
-        // Búsqueda por rango (nombre que empieza por...)
         const q = query(
           usersRef, 
           where("displayName", ">=", userSearchQuery),
@@ -46,7 +42,6 @@ const Forum = () => {
         const snapshot = await getDocs(q);
         const results = snapshot.docs
           .map(doc => ({ uid: doc.id, ...doc.data() }))
-          // Filtramos para no mostrarnos a nosotros mismos
           .filter(u => u.uid !== user?.uid); 
         
         setUserSearchResults(results);
@@ -55,7 +50,6 @@ const Forum = () => {
       }
     };
 
-    // Debounce de 300ms
     const delayDebounceFn = setTimeout(() => {
       searchUsers();
     }, 300);
@@ -64,12 +58,11 @@ const Forum = () => {
   }, [userSearchQuery, user]);
 
   const handleUserClick = (uid) => {
-    navigate(`/user/${uid}`); // Ir al perfil público
-    setUserSearchQuery("");    // Limpiar búsqueda
+    navigate(`/user/${uid}`); 
+    setUserSearchQuery("");    
     setIsUserSearching(false);
   };
 
-  // 2. LEER POSTS
   useEffect(() => {
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -100,7 +93,6 @@ const Forum = () => {
     setTrends(sortedTrends.length > 0 ? sortedTrends : [{ tag: "#MediaConnect", count: posts.length }]);
   };
 
-  // 3. PUBLICAR
   const handlePublish = async () => {
     if (!newPostContent.trim()) return;
     if (!user) { alert("Debes iniciar sesión"); return; }
@@ -117,7 +109,6 @@ const Forum = () => {
         tag: "General"
       });
 
-      // Notificar a seguidores
       await notifyFollowers(
           user.uid, 
           user, 
@@ -146,7 +137,6 @@ const Forum = () => {
       } else {
           await updateDoc(postRef, { likes: arrayUnion(user.uid) });
 
-          // Notificar al dueño del post
           if (post.uid !== user.uid) {
               await sendNotification(
                   post.uid, 
@@ -164,7 +154,6 @@ const Forum = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300 pb-20 lg:pb-0">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
         
-        {/* --- COLUMNA IZQUIERDA (Navegación y Buscador) --- */}
         <div className="hidden lg:block col-span-1 p-4 border-r border-slate-200 dark:border-slate-800 sticky top-16 h-screen overflow-y-auto">
           <h2 className="text-xl font-bold mb-6 px-2 text-slate-900 dark:text-white">Navegación</h2>
           <nav className="space-y-2">
@@ -175,7 +164,6 @@ const Forum = () => {
             <button className="w-full text-left px-4 py-3 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">👤 Perfil</button>
           </nav>
 
-          {/* --- BUSCADOR DE USUARIOS INTEGRADO --- */}
           <div className="mt-8 relative z-20">
             <h3 className="text-sm font-bold text-slate-500 uppercase mb-2 px-2">Buscar Personas</h3>
             <div className="px-2">
@@ -190,7 +178,6 @@ const Forum = () => {
                     <Search className="absolute left-2.5 top-2.5 text-slate-400" size={16} />
                 </div>
 
-                {/* LISTA DE RESULTADOS FLOTANTE */}
                 {isUserSearching && (
                     <div className="absolute left-2 right-2 mt-2 bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
                         {userSearchResults.length > 0 ? (
@@ -225,9 +212,7 @@ const Forum = () => {
 
         </div>
 
-        {/* --- COLUMNA CENTRAL (Feed) --- */}
         <div className="col-span-1 lg:col-span-2 border-r border-slate-200 dark:border-slate-800 min-h-screen">
-          {/* Header Móvil y Escritorio */}
           <div className="sticky top-16 z-10 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-4">
             <h1 className="text-xl font-bold mb-4 hidden md:block text-slate-900 dark:text-white">Inicio</h1>
             <div className="flex gap-4">
@@ -241,7 +226,6 @@ const Forum = () => {
             </div>
           </div>
 
-          {/* Posts */}
           <div>
             {posts.map((post) => {
               const likes = post.likes || [];
@@ -265,7 +249,6 @@ const Forum = () => {
           </div>
         </div>
 
-        {/* --- COLUMNA DERECHA (Tendencias Escritorio) --- */}
         <div className="hidden lg:block col-span-1 p-4 sticky top-16 h-fit">
           <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
              <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-900 dark:text-white"><Flame size={20} className="text-orange-500" /> Tendencias</h3>
@@ -282,7 +265,6 @@ const Forum = () => {
         </div>
       </div>
 
-      {/* --- BARRA DE NAVEGACIÓN MÓVIL --- */}
       <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex justify-around items-center p-3 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
         <button onClick={() => { window.scrollTo(0,0); setShowMobileTrends(false); }} className="p-2 text-slate-600 dark:text-slate-400 hover:text-blue-500 flex flex-col items-center">
             <Home size={24} />
@@ -305,7 +287,6 @@ const Forum = () => {
         </button>
       </div>
 
-      {/* --- MODAL TENDENCIAS MÓVIL --- */}
       {showMobileTrends && (
         <div className="lg:hidden fixed inset-0 z-40 bg-white dark:bg-slate-950 pt-20 px-4 animate-in slide-in-from-bottom-10">
             <div className="flex justify-between items-center mb-6">
@@ -324,7 +305,6 @@ const Forum = () => {
         </div>
       )}
 
-      {/* BOTÓN FLOTANTE */}
       <div className="md:hidden fixed bottom-24 right-4 z-40">
         <button onClick={() => window.scrollTo(0,0)} className="bg-blue-600 hover:bg-blue-700 p-4 rounded-full shadow-lg text-white transition-transform hover:scale-110 active:scale-90">
             <PenSquare size={24} />

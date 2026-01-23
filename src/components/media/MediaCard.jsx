@@ -16,7 +16,6 @@ const MediaCard = ({ id, title, image, rating, type }) => {
     <Link to={getPath()} className="block"> 
       <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow-xl dark:shadow-none hover:shadow-blue-500/10 dark:hover:shadow-blue-500/20 transition-all hover:-translate-y-1 cursor-pointer group h-full flex flex-col border border-slate-200 dark:border-slate-700">
         
-        {/* Contenedor de Imagen */}
         <div className="relative aspect-[2/3] overflow-hidden">
           <img 
             src={image} 
@@ -29,7 +28,6 @@ const MediaCard = ({ id, title, image, rating, type }) => {
           </div>
         </div>
 
-        {/* Info */}
         <div className="p-4 flex-1 flex flex-col justify-end">
           <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">{type}</span>
           <h3 className="text-slate-900 dark:text-white font-semibold truncate mt-1" title={title}>{title}</h3>

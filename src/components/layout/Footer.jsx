@@ -1,17 +1,16 @@
 import React from 'react';
 import { Github, Twitter, Instagram, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext'; // <--- IMPORTAMOS EL CONTEXTO
+import { useAuth } from '../../context/AuthContext'; 
 
 const Footer = () => {
-  const { user } = useAuth(); // <--- OBTENEMOS EL USUARIO
+  const { user } = useAuth(); 
 
   return (
     <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 transition-colors duration-300 mt-auto">
       <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           
-          {/* Columna 1: Info */}
           <div className="col-span-1 md:col-span-1">
             <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
               MediaConnect
@@ -21,7 +20,6 @@ const Footer = () => {
             </p>
           </div>
 
-          {/* Columna 2: Explorar */}
           <div>
             <h4 className="font-bold text-slate-900 dark:text-white mb-4">Explorar</h4>
             <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
@@ -32,26 +30,22 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Columna 3: Comunidad (LÓGICA CAMBIADA) */}
           <div>
             <h4 className="font-bold text-slate-900 dark:text-white mb-4">Comunidad</h4>
             <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
               <li><Link to="/forum" className="hover:text-blue-500 transition-colors">Foros de Discusión</Link></li>
               
-              {/* CONDICIONAL: Si NO hay usuario, muestra Login/Registro */}
               {!user ? (
                 <>
                   <li><Link to="/register" className="hover:text-blue-500 transition-colors">Registrarse</Link></li>
                   <li><Link to="/login" className="hover:text-blue-500 transition-colors">Iniciar Sesión</Link></li>
                 </>
               ) : (
-                /* Si HAY usuario, muestra enlace al perfil */
                 <li><Link to="/profile" className="hover:text-blue-500 transition-colors font-bold text-blue-600 dark:text-blue-400">Ir a mi Perfil</Link></li>
               )}
             </ul>
           </div>
 
-          {/* Columna 4: Social */}
           <div>
             <h4 className="font-bold text-slate-900 dark:text-white mb-4">Síguenos</h4>
             <div className="flex gap-4">

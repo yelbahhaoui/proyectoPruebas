@@ -3,7 +3,7 @@ import { fetchPopularSeries, searchSeries } from '../services/api';
 import MediaCard from '../components/media/MediaCard';
 import FilterBar from '../components/common/FilterBar';
 import { Loader2 } from 'lucide-react';
-import { useInfiniteScroll } from '../hooks/useInfiniteScroll'; // <--- IMPORTADO
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll'; 
 
 const Series = () => {
   const [rawData, setRawData] = useState([]);
@@ -20,7 +20,6 @@ const Series = () => {
     { id: 10765, name: "Sci-Fi & Fantasy" }, { id: 10768, name: "Guerra & Política" }
   ];
 
-  // Hook Scroll
   const lastElementRef = useInfiniteScroll(() => {
     setPage(prev => prev + 1);
   }, loading);
@@ -45,11 +44,9 @@ const Series = () => {
   const loadContent = async (pageNum) => {
     setLoading(true);
 
-    // --- DELAY ARTIFICIAL ---
     if (pageNum > 1) {
         await new Promise(resolve => setTimeout(resolve, 200));
     }
-    // ------------------------
 
     const data = await fetchPopularSeries(pageNum);
     
@@ -91,7 +88,6 @@ const Series = () => {
           ))}
       </div>
 
-      {/* ELEMENTO CENTINELA */}
       <div ref={lastElementRef} className="h-24 flex items-center justify-center mt-8">
           {loading && (
              <div className="flex flex-col items-center gap-2 text-slate-500 dark:text-slate-400">

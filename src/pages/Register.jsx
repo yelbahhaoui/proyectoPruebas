@@ -11,11 +11,9 @@ const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // Importamos signup (normal) y loginWithSocial (Google/Github)
   const { signup, loginWithSocial } = useAuth(); 
   const navigate = useNavigate();
 
-  // --- REGISTRO NORMAL ---
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -42,7 +40,6 @@ const Register = () => {
     setLoading(false);
   };
 
-  // --- REGISTRO SOCIAL ---
   const handleSocialRegister = async (provider) => {
     try {
         setError('');
@@ -70,7 +67,6 @@ const Register = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* Nombre de Usuario */}
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
             <input
@@ -83,7 +79,6 @@ const Register = () => {
             />
           </div>
 
-          {/* Email */}
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
             <input
@@ -96,7 +91,6 @@ const Register = () => {
             />
           </div>
 
-          {/* Password */}
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
             <input
@@ -109,7 +103,6 @@ const Register = () => {
             />
           </div>
 
-          {/* Confirm Password */}
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
             <input
@@ -133,14 +126,12 @@ const Register = () => {
           </button>
         </form>
 
-        {/* --- DIVISOR --- */}
         <div className="my-6 flex items-center gap-4">
             <div className="h-px bg-slate-300 dark:bg-slate-700 flex-1"></div>
             <span className="text-slate-500 text-sm">O regístrate con</span>
             <div className="h-px bg-slate-300 dark:bg-slate-700 flex-1"></div>
         </div>
 
-        {/* --- BOTONES SOCIALES --- */}
         <div className="grid grid-cols-2 gap-4">
             <button 
                 onClick={() => handleSocialRegister('google')}

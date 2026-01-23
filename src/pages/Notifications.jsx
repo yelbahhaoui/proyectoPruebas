@@ -13,7 +13,6 @@ const Notifications = () => {
   useEffect(() => {
     if (!user) return;
 
-    // Escuchar notificaciones en tiempo real
     const q = query(
         collection(db, "users", user.uid, "notifications"), 
         orderBy("createdAt", "desc")
@@ -27,11 +26,9 @@ const Notifications = () => {
   }, [user]);
 
   const handleNotificationClick = async (notif) => {
-    // Marcar como leída
     if (!notif.read) {
         await updateDoc(doc(db, "users", user.uid, "notifications", notif.id), { read: true });
     }
-    // Navegar
     if (notif.link) navigate(notif.link);
   };
 
@@ -68,7 +65,6 @@ const Notifications = () => {
                         onClick={() => handleNotificationClick(notif)}
                         className={`p-4 flex items-start gap-4 cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 ${!notif.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
                     >
-                        {/* Avatar Emisor */}
                         <div className="relative">
                             <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
                                 {notif.senderAvatar && <img src={notif.senderAvatar} alt="" className="w-full h-full object-cover"/>}

@@ -3,7 +3,7 @@ import { fetchTrendingAnime, searchAnime } from '../services/api';
 import MediaCard from '../components/media/MediaCard';
 import FilterBar from '../components/common/FilterBar';
 import { Loader2 } from 'lucide-react';
-import { useInfiniteScroll } from '../hooks/useInfiniteScroll'; // <--- IMPORTADO
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll'; 
 
 const Anime = () => {
   const [rawData, setRawData] = useState([]);
@@ -17,7 +17,6 @@ const Anime = () => {
     "Horror", "Mecha", "Mystery", "Romance", "Sci-Fi", "Slice of Life", "Sports"
   ].map(g => ({ id: g, name: g }));
 
-  // Hook Scroll
   const lastElementRef = useInfiniteScroll(() => {
     setPage(prev => prev + 1);
   }, loading);
@@ -41,11 +40,9 @@ const Anime = () => {
   const loadContent = async (pageNum) => {
     setLoading(true);
     
-    // --- DELAY ARTIFICIAL ---
     if (pageNum > 1) {
         await new Promise(resolve => setTimeout(resolve, 200));
     }
-    // ------------------------
 
     const data = await fetchTrendingAnime(pageNum);
     
@@ -87,7 +84,6 @@ const Anime = () => {
         ))}
       </div>
 
-      {/* ELEMENTO CENTINELA */}
       <div ref={lastElementRef} className="h-24 flex items-center justify-center mt-8">
           {loading && (
              <div className="flex flex-col items-center gap-2 text-slate-500 dark:text-slate-400">

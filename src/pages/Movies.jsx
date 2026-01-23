@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { fetchPopularMovies, searchMovies } from '../services/api';
 import MediaCard from '../components/media/MediaCard';
 import FilterBar from '../components/common/FilterBar';
-import { Loader2 } from 'lucide-react'; // Cambiado icono
-import { useInfiniteScroll } from '../hooks/useInfiniteScroll'; // <--- IMPORTADO
+import { Loader2 } from 'lucide-react'; 
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll'; 
 
 const Movies = () => {
   const [rawData, setRawData] = useState([]);
@@ -21,7 +21,6 @@ const Movies = () => {
     { id: 27, name: "Terror" }, { id: 878, name: "Ciencia Ficción" }
   ];
 
-  // 1. Hook de Scroll Infinito
   const lastElementRef = useInfiniteScroll(() => {
     setPage(prev => prev + 1);
   }, loading);
@@ -39,11 +38,9 @@ const Movies = () => {
   const loadContent = async (pageNum) => {
     setLoading(true);
     
-    // --- DELAY ARTIFICIAL (1 segundo) ---
     if (pageNum > 1) {
         await new Promise(resolve => setTimeout(resolve, 200));
     }
-    // ------------------------------------
 
     const data = await fetchPopularMovies(pageNum);
     
@@ -77,7 +74,7 @@ const Movies = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {displayedMovies.map((movie, index) => (
             <MediaCard 
-              key={`${movie.id}-${index}`} // Key única usando index por si acaso
+              key={`${movie.id}-${index}`} 
               id={movie.id}
               title={movie.title}
               image={movie.poster_path ? `${IMAGE_BASE}${movie.poster_path}` : 'https://via.placeholder.com/300x450'}
@@ -87,7 +84,6 @@ const Movies = () => {
           ))}
       </div>
       
-      {/* ELEMENTO CENTINELA (Invisible hasta llegar al final) */}
       <div ref={lastElementRef} className="h-24 flex items-center justify-center mt-8">
           {loading && (
              <div className="flex flex-col items-center gap-2 text-slate-500 dark:text-slate-400">

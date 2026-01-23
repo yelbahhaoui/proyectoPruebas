@@ -6,19 +6,16 @@ import { Lock, LogIn } from 'lucide-react';
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
-  // Loader Adaptable
   if (loading) return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center text-slate-900 dark:text-white transition-colors duration-300">
       Cargando...
     </div>
   );
 
-  // Mensaje de Acceso Restringido (ADAPTABLE)
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center px-4 transition-colors duration-300">
         
-        {/* Tarjeta: Blanca en día, oscura en noche */}
         <div className="max-w-md w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center shadow-2xl transition-all duration-300">
           
           <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 transition-colors">
@@ -52,7 +49,6 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  // Si hay usuario, mostramos la página normal
   return children;
 };
 

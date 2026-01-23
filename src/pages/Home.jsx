@@ -1,17 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Film, Gamepad2, Tv, MessageCircle, ArrowRight, Star, Users } from 'lucide-react';
-import { useAuth } from '../context/AuthContext'; // <--- 1. IMPORTAMOS EL CONTEXTO
+import { useAuth } from '../context/AuthContext'; 
 
 const Home = () => {
-  const { user } = useAuth(); // <--- 2. OBTENEMOS EL USUARIO
+  const { user } = useAuth(); 
 
   const cardClass = "group relative aspect-[3/4] overflow-hidden rounded-xl bg-slate-200 dark:bg-slate-800 block transition-all duration-300 hover:ring-2 hover:ring-blue-500 hover:shadow-lg hover:shadow-blue-500/20 hover:-translate-y-1";
 
   return (
     <div className="flex flex-col min-h-screen">
       
-      {/* HERO SECTION */}
       <section className="relative py-24 px-4 sm:px-6 lg:px-8 text-center overflow-hidden">
         <div className="absolute inset-0 bg-white dark:bg-gradient-to-b dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 -z-10 transition-colors duration-300"></div>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl opacity-30 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-400 via-transparent to-transparent pointer-events-none"></div>
@@ -30,7 +29,6 @@ const Home = () => {
 
         <div className="flex flex-col sm:flex-row justify-center gap-4">
           
-          {/* 3. CONDICIONAL: Solo mostramos este botón si NO hay usuario (!user) */}
           {!user && (
             <Link to="/register" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all hover:scale-105 flex items-center justify-center gap-2 shadow-xl shadow-blue-500/20">
               Crear cuenta gratis <ArrowRight size={20} />
@@ -43,7 +41,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* FEATURES SECTION */}
       <section className="py-20 bg-slate-50 dark:bg-slate-950 px-4 transition-colors duration-300">
         <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8">
           <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 transition-colors">
@@ -76,7 +73,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* CATEGORIES PREVIEW */}
       <section className="py-20 bg-white dark:bg-slate-900 px-4 transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-12 text-center">Explora por categorías</h2>

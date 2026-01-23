@@ -5,7 +5,6 @@ const FilterBar = ({ onSearch, onFilterChange, genresList = [], filters }) => {
   return (
     <div className="bg-white dark:bg-slate-900 p-4 rounded-xl mb-8 border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row gap-4 items-center shadow-sm transition-colors duration-300">
       
-      {/* 1. BUSCADOR */}
       <div className="relative w-full md:w-1/3">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
         <input 
@@ -18,14 +17,12 @@ const FilterBar = ({ onSearch, onFilterChange, genresList = [], filters }) => {
 
       <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
 
-      {/* 2. FILTROS */}
       <div className="flex flex-wrap gap-4 w-full items-center">
         <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
           <Filter size={16} />
           <span className="text-sm font-bold uppercase">Filtrar:</span>
         </div>
 
-        {/* Filtro Géneros */}
         <select 
           className="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-sm px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-blue-500 outline-none transition-colors"
           value={filters.genre}
@@ -37,7 +34,6 @@ const FilterBar = ({ onSearch, onFilterChange, genresList = [], filters }) => {
           ))}
         </select>
 
-        {/* Filtro Año */}
         <input 
           type="number" 
           placeholder="Año (ej. 2023)"
@@ -46,7 +42,6 @@ const FilterBar = ({ onSearch, onFilterChange, genresList = [], filters }) => {
           onChange={(e) => onFilterChange('year', e.target.value)}
         />
 
-        {/* Filtro Puntuación */}
         <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors">
           <span className="text-xs text-slate-500 dark:text-slate-400">Min. Rating:</span>
           <input 
@@ -59,7 +54,6 @@ const FilterBar = ({ onSearch, onFilterChange, genresList = [], filters }) => {
           <span className="text-sm font-bold text-blue-500">{filters.minRating}</span>
         </div>
 
-        {/* Botón Limpiar */}
         {(filters.year || filters.genre || filters.minRating > 0) && (
           <button 
             onClick={() => onFilterChange('reset')}

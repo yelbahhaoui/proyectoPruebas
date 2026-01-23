@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { db, auth, storage } from '../services/firebase'; // Importamos storage
+import { db, auth, storage } from '../services/firebase'; 
 import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Funciones de Storage
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; 
 import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, Heart, Settings, Camera, User, Edit3, Loader2 } from 'lucide-react';
 
@@ -12,11 +12,10 @@ const Profile = () => {
   const navigate = useNavigate();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false); // Estado para la subida
+  const [uploading, setUploading] = useState(false); 
   const [filter, setFilter] = useState('all');
   const [photoURL, setPhotoURL] = useState(user?.photoURL);
 
-  // Referencia al input de archivo invisible
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -45,12 +44,10 @@ const Profile = () => {
     try { await logout(); navigate('/login'); } catch (error) { console.error(error); }
   };
 
-  // 1. Simular clic en el input oculto
   const triggerFileSelect = () => {
     fileInputRef.current.click();
   };
 
-  // 2. Manejar la selección del archivo y subirlo
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -58,21 +55,16 @@ const Profile = () => {
     setUploading(true);
 
     try {
-        // A. Referencia: ¿Dónde guardar la foto? (carpeta avatars / id_usuario)
         const storageRef = ref(storage, `avatars/${user.uid}`);
 
-        // B. Subir el archivo
         await uploadBytes(storageRef, file);
 
-        // C. Obtener la URL pública de la imagen subida
         const downloadURL = await getDownloadURL(storageRef);
 
-        // D. Actualizar Auth y Firestore con la nueva URL
         await updateProfile(auth.currentUser, { photoURL: downloadURL });
         const userRef = doc(db, "users", user.uid);
         await updateDoc(userRef, { photoURL: downloadURL });
 
-        // E. Actualizar vista
         setPhotoURL(downloadURL);
         
     } catch (error) {
@@ -104,7 +96,6 @@ const Profile = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 pt-20 pb-10 px-4 transition-colors duration-300">
       <div className="max-w-6xl mx-auto">
         
-        {/* INPUT OCULTO PARA SUBIR ARCHIVOS */}
         <input 
             type="file" 
             ref={fileInputRef} 
@@ -113,10 +104,8 @@ const Profile = () => {
             accept="image/*" 
         />
 
-        {/* HEADER PERFIL */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 mb-8 flex flex-col md:flex-row items-center md:items-start gap-6 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
           
-          {/* Avatar con Botón de Edición */}
           <div className="relative group cursor-pointer" onClick={triggerFileSelect}>
             <div className={`w-32 h-32 rounded-full overflow-hidden border-4 border-white dark:border-slate-800 shadow-lg relative ${uploading ? 'opacity-50' : ''}`}>
                 {photoURL ? (
@@ -127,7 +116,6 @@ const Profile = () => {
                     </div>
                 )}
                 
-                {/* Spinner de carga si está subiendo */}
                 {uploading && (
                     <div className="absolute inset-0 flex items-center justify-center">
                         <Loader2 className="animate-spin text-white" size={32} />
@@ -135,7 +123,6 @@ const Profile = () => {
                 )}
             </div>
             
-            {/* Overlay al pasar el mouse */}
             <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <Camera className="text-white" size={24} />
             </div>
@@ -145,7 +132,6 @@ const Profile = () => {
             </button>
           </div>
 
-          {/* Info Usuario */}
           <div className="flex-1 text-center md:text-left">
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{user?.displayName || "Usuario"}</h1>
             <p className="text-slate-500 dark:text-slate-400 mb-4">{user?.email}</p>
@@ -164,7 +150,6 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Stats */}
           <div className="flex gap-8 text-center bg-slate-50 dark:bg-slate-950/50 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
              <div>
                 <p className="text-3xl font-bold text-blue-600 dark:text-blue-500">{favorites.length}</p>
@@ -173,7 +158,6 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* TABS FILTROS */}
         <div className="flex flex-wrap gap-2 mb-6">
             {['all', 'movie', 'series', 'anime', 'game'].map((tab) => (
                 <button
@@ -190,7 +174,6 @@ const Profile = () => {
             ))}
         </div>
 
-        {/* GRID FAVORITOS */}
         {filteredFavorites.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {filteredFavorites.map((item) => (

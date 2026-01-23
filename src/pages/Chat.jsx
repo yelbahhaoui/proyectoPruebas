@@ -23,7 +23,6 @@ const Chat = () => {
   
   const messagesContainerRef = useRef(null);
 
-  // 1. CARGAR LISTA DE CHATS
   useEffect(() => {
     if (!user) return;
     
@@ -47,7 +46,6 @@ const Chat = () => {
     return () => unsubscribe();
   }, [user]);
 
-  // 2. RESTAURAR CHAT DESDE URL
   useEffect(() => {
     const urlChatId = searchParams.get('chatId');
     if (urlChatId && !loadingChats && chats.length > 0) {
@@ -57,7 +55,6 @@ const Chat = () => {
     }
   }, [searchParams, chats, loadingChats]);
 
-  // 3. CARGAR MENSAJES Y SCROLL
   useEffect(() => {
     if (!selectedChat?.id) return;
 
@@ -70,7 +67,6 @@ const Chat = () => {
       const msgs = snapshot.docs.map(doc => doc.data());
       setMessages(msgs);
       
-      // Scroll al final sin mover la pantalla entera
       setTimeout(() => {
         if (messagesContainerRef.current) {
           messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -81,7 +77,6 @@ const Chat = () => {
     return () => unsubscribe();
   }, [selectedChat?.id]);
 
-  // 4. BUSCAR USUARIOS
   useEffect(() => {
     const searchUsers = async () => {
       if (!searchQuery.trim()) {
@@ -179,15 +174,9 @@ const Chat = () => {
   const headerInfo = getHeaderInfo();
 
   return (
-    // Ajuste de altura para móvil (calc(100vh - header))
     <div className="h-[calc(100vh-4rem)] md:min-h-screen bg-gray-50 dark:bg-slate-950 pt-20 pb-4 px-0 md:px-4 transition-colors duration-300">
       <div className="max-w-6xl mx-auto bg-white dark:bg-slate-900 md:rounded-2xl shadow-none md:shadow-xl border-x md:border border-slate-200 dark:border-slate-800 overflow-hidden h-full flex">
         
-        {/* --- COLUMNA IZQUIERDA (LISTA) --- 
-            Lógica: Si hay chat seleccionado, se oculta en móvil (hidden). 
-            Si NO hay chat, se muestra (flex).
-            En escritorio (md:flex) siempre se muestra.
-        */}
         <div className={`w-full md:w-1/3 border-r border-slate-200 dark:border-slate-800 flex-col ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Mensajes</h2>
@@ -253,16 +242,11 @@ const Chat = () => {
           </div>
         </div>
 
-        {/* --- COLUMNA DERECHA (CONVERSACIÓN) --- 
-            Lógica: Si hay chat seleccionado, se muestra (flex).
-            Si NO hay chat, se oculta en móvil (hidden).
-            En escritorio (md:flex) se muestra siempre.
-        */}
         <div className={`w-full md:w-2/3 flex-col bg-slate-50 dark:bg-black/20 ${selectedChat ? 'flex' : 'hidden md:flex'}`}>
           {selectedChat ? (
             <>
               <div className="p-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3 shadow-sm z-10">
-                {/* Botón Volver (Solo visible en móvil) */}
+                
                 <button onClick={() => { setSelectedChat(null); setSearchParams({}); }} className="md:hidden p-2 hover:bg-slate-100 rounded-full text-slate-500"><ArrowLeft size={20}/></button>
                 
                 <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden flex items-center justify-center">
@@ -271,7 +255,6 @@ const Chat = () => {
                 <h3 className="font-bold text-lg text-slate-900 dark:text-white">{headerInfo.name}</h3>
               </div>
 
-              {/* Contenedor de Mensajes */}
               <div 
                 ref={messagesContainerRef} 
                 className="flex-1 overflow-y-auto p-4 space-y-4"

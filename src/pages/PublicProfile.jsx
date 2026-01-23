@@ -3,32 +3,28 @@ import { useParams, Link } from 'react-router-dom';
 import { db } from '../services/firebase';
 import { doc, getDoc, collection, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
-import { sendNotification } from '../services/notificationService'; // Importamos el servicio
+import { sendNotification } from '../services/notificationService'; 
 import { User, Heart, UserPlus, UserCheck, MessageCircle } from 'lucide-react';
 
 const PublicProfile = () => {
-  const { uid } = useParams(); // ID del usuario que visitamos
-  const { user } = useAuth(); // Yo (el que visita)
+  const { uid } = useParams(); 
+  const { user } = useAuth(); 
   
   const [profile, setProfile] = useState(null);
   const [favorites, setFavorites] = useState([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // 1. Cargar datos del usuario y sus favoritos
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Datos del usuario
         const userDoc = await getDoc(doc(db, "users", uid));
         if (userDoc.exists()) {
           setProfile(userDoc.data());
           
-          // Sus Favoritos
           const favsSnapshot = await getDocs(collection(db, "users", uid, "favorites"));
           setFavorites(favsSnapshot.docs.map(d => d.data()));
 
-          // Comprobar si ya le sigo
           if (user) {
             const followDoc = await getDoc(doc(db, "users", user.uid, "following", uid));
             setIsFollowing(followDoc.exists());
@@ -43,7 +39,6 @@ const PublicProfile = () => {
     fetchData();
   }, [uid, user]);
 
-  // 2. Manejar Seguir / Dejar de seguir
   const handleFollow = async () => {
     if (!user) return alert("Inicia sesión para seguir a usuarios");
 
@@ -52,17 +47,14 @@ const PublicProfile = () => {
 
     try {
       if (isFollowing) {
-        // Dejar de seguir
         await deleteDoc(myFollowingRef);
         await deleteDoc(theirFollowersRef);
         setIsFollowing(false);
       } else {
-        // Seguir
         await setDoc(myFollowingRef, { since: new Date() });
         await setDoc(theirFollowersRef, { since: new Date() });
         setIsFollowing(true);
 
-        // --- NOTIFICAR AL USUARIO ---
         await sendNotification(
             uid, 
             'follow', 
@@ -83,7 +75,6 @@ const PublicProfile = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 pt-20 pb-10 px-4 transition-colors duration-300">
       <div className="max-w-6xl mx-auto">
         
-        {/* CABECERA PERFIL */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 mb-8 flex flex-col md:flex-row items-center gap-8 shadow-xl border border-slate-200 dark:border-slate-800">
            <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white dark:border-slate-800 shadow-lg">
                 {profile.photoURL ? <img src={profile.photoURL} className="w-full h-full object-cover"/> : <div className="w-full h-full bg-blue-500 flex items-center justify-center text-white"><User size={60}/></div>}
@@ -106,9 +97,8 @@ const PublicProfile = () => {
                             {isFollowing ? <><UserCheck size={18}/> Siguiendo</> : <><UserPlus size={18}/> Seguir</>}
                         </button>
                         
-                        {/* Botón para ir al chat con este usuario */}
                         <Link 
-                            to={`/chat?chatId=new&uid=${uid}`} // (Nota: Habría que ajustar Chat.jsx para recibir esto, por ahora link simple)
+                            to={`/chat?chatId=new&uid=${uid}`} 
                             className="px-6 py-2 rounded-full font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
                         >
                             <MessageCircle size={18}/> Mensaje
@@ -123,7 +113,6 @@ const PublicProfile = () => {
            </div>
         </div>
 
-        {/* LISTA DE FAVORITOS (Reutilizando diseño) */}
         <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
             <Heart className="text-red-500" fill="currentColor"/> Favoritos de {profile.displayName}
         </h3>

@@ -1,4 +1,3 @@
-// src/hooks/useInfiniteScroll.js
 import { useEffect, useRef } from 'react';
 
 export const useInfiniteScroll = (callback, isLoading) => {
@@ -7,12 +6,11 @@ export const useInfiniteScroll = (callback, isLoading) => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        // Si el elemento es visible Y no estamos cargando datos actualmente
         if (entries[0].isIntersecting && !isLoading) {
           callback();
         }
       },
-      { threshold: 1.0 } // 1.0 significa que el elemento debe verse completo
+      { threshold: 1.0 } 
     );
 
     if (observerTarget.current) {
